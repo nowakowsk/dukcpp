@@ -18,6 +18,14 @@ target_link_libraries(dukcpp-test
     dukcpp
 )
 
+if(MSVC)
+  set_target_properties(dukcpp-test
+    PROPERTIES
+      # LNK4099: PDB was not found
+      LINK_FLAGS "/ignore:4099"
+  )
+endif()
+
 include(CTest)
 include(Catch)
 catch_discover_tests(dukcpp-test)

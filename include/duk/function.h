@@ -6,6 +6,7 @@
 #include <duktape.h>
 #include <functional>
 #include <string_view>
+#include <tuple>
 #include <utility>
 
 
@@ -16,6 +17,7 @@ namespace duk
 namespace detail
 {
 
+
 template<auto func, typename ArgIdx>
 struct FunctionWrapper;
 
@@ -25,7 +27,7 @@ struct FunctionWrapper<func, std::index_sequence<argIdx...>>
   using Result = boost::callable_traits::return_type_t<decltype(func)>;
   using ArgsTuple = boost::callable_traits::args_t<decltype(func)>;
 
-  static duk_ret_t run(duk_context *ctx)
+  static duk_ret_t run(duk_context* ctx)
   {
     bool argsMatch = duk_get_top(ctx) == sizeof...(argIdx) &&
                      (type_traits<std::tuple_element_t<argIdx, ArgsTuple>>::check_type(ctx, argIdx) && ...);
@@ -47,7 +49,7 @@ struct FunctionWrapper<func, std::index_sequence<argIdx...>>
 };
 
 template<auto ...funcs>
-duk_ret_t overloadedFunctionWrapper(duk_context *ctx)
+duk_ret_t overloadedFunctionWrapper(duk_context* ctx)
 {
   duk_ret_t result;
 
@@ -65,6 +67,7 @@ duk_ret_t overloadedFunctionWrapper(duk_context *ctx)
 
   return result;
 }
+
 
 } // namespace detail
 

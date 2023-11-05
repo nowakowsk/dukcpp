@@ -9,21 +9,21 @@ namespace duk
 {
 
 
-namespace detail
+class context final
 {
+public:
+  context(duk_context* ctx) noexcept;
 
-struct context_deleter final
-{
-  void operator()(duk_context* ctx) noexcept
+  operator duk_context*() const noexcept;
+
+private:
+  struct ContextDeleter final
   {
-    duk_destroy_heap(ctx);
-  }
+    void operator()(duk_context* ctx) const noexcept;
+  };
+
+  std::unique_ptr<duk_context, ContextDeleter> ctx_;
 };
-
-} // namespace detail
-
-
-using context = std::unique_ptr<duk_context, detail::context_deleter>;
 
 
 } // namespace duk
