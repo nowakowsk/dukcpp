@@ -12,8 +12,8 @@ namespace duk
 template<typename allocator_t = std::allocator<std::byte>>
 class allocator_adapter final
 {
-  static_assert(sizeof(std::allocator_traits<allocator_t>::value_type) == 1);
-  static_assert(std::is_trivial_v<std::allocator_traits<allocator_t>::value_type>);
+  static_assert(sizeof(typename std::allocator_traits<allocator_t>::value_type) == 1);
+  static_assert(std::is_trivial_v<typename std::allocator_traits<allocator_t>::value_type>);
 
   struct BlockInfo final
   {

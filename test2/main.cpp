@@ -34,8 +34,7 @@ void overloaded(std::string_view v)
 
 int main()
 {
-  duk::context ctxOwning(duk_create_heap_default());
-  auto ctx = ctxOwning.get();
+  duk::context ctx(duk_create_heap_default());
 
   duk_push_global_object(ctx);
   duk::register_function<add>(ctx, -1, "add");
