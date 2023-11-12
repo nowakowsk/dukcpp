@@ -11,8 +11,12 @@ find_package(CallableTraits REQUIRED)
 
 include(cmake/duktape.cmake)
 
+set(DUKCPP_DUKTAPE_PATH "" CACHE PATH "Path to Duktape source code directory")
+if(DUKCPP_DUKTAPE_PATH STREQUAL "")
+  status(FATAL_ERROR "Path to Duktape source code directory is not set (DUKCPP_DUKTAPE_PATH).")
+endif()
+
 # TODO: These will be configurable.
-set(DUKTAPE_PATH "c:/Users/nowak/deps/duktape/2_7_0")
 set(DUKTAPE_OPTIONS
   -DDUK_USE_FATAL_HANDLER
   -DDUK_USE_CPP_EXCEPTIONS
@@ -20,7 +24,7 @@ set(DUKTAPE_OPTIONS
   -DDUK_USE_VOLUNTARY_GC
 )
 
-add_duktape_library(dukcpp-duktape "${DUKTAPE_PATH}" ${DUKTAPE_OPTIONS})
+add_duktape_library(dukcpp-duktape "${DUKCPP_DUKTAPE_PATH}" ${DUKTAPE_OPTIONS})
 
 ###############################################################################
 # dukcpp
