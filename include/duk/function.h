@@ -53,7 +53,7 @@ duk_ret_t overloadedFunctionWrapper(duk_context* ctx)
 {
   duk_ret_t result;
 
-  (
+  (void)(
     ((result = 
         [&]()
         {

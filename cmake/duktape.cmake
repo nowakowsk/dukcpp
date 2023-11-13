@@ -25,17 +25,17 @@ function(add_duktape_library TARGET_NAME DUKTAPE_PATH)
     endif()
   endforeach()
   
-  # This could be configurable.
-  set_source_files_properties(
-    "${OUTPUT_FILE}"
-    PROPERTIES LANGUAGE CXX
+  # This should be configurable.
+  set_source_files_properties("${OUTPUT_FILE}"
+    PROPERTIES
+      LANGUAGE CXX
   )
   
   add_library(${TARGET_NAME} ${LINK_MODE}
     "${OUTPUT_FILE}"
   )
   
-  target_include_directories(${TARGET_NAME}
+  target_include_directories(${TARGET_NAME} SYSTEM
     PUBLIC
       "${OUTPUT_DIR}"
   )
