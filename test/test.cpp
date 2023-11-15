@@ -22,10 +22,27 @@ static int addFunc(int a, int b)
 }
 
 
+static int addFuncRef(const int& a, const int& b)
+{
+  return a + b;
+}
+
+
 TEST_CASE_METHOD(DukCppTest, "Register function")
 {
   duk_push_global_object(ctx_);
   duk::register_function<addFunc>(ctx_, -1, "addFunc");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "addFunc(1, 2)");
+  REQUIRE(duk_get_int(ctx_, -1) == 3);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Register function (reference arguments)")
+{
+  duk_push_global_object(ctx_);
+  duk::register_function<addFuncRef>(ctx_, -1, "addFunc");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "addFunc(1, 2)");
