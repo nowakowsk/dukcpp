@@ -16,6 +16,8 @@ public:
 
   operator duk_context*() const noexcept;
 
+  void release() noexcept;
+
 private:
   struct ContextDeleter final
   {

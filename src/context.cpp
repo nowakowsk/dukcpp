@@ -17,6 +17,12 @@ context::operator duk_context*() const noexcept
 }
 
 
+void context::release() noexcept
+{
+  ctx_.reset();
+}
+
+
 void context::ContextDeleter::operator()(duk_context* ctx) const noexcept
 {
   duk_destroy_heap(ctx);

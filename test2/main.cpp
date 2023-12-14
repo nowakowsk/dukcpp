@@ -1,5 +1,4 @@
-#include <duk/context.h>
-#include <duk/function.h>
+#include <duk/duk.h>
 #include <iostream>
 
 

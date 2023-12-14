@@ -4,7 +4,7 @@ set(MODULE_NAME dukcpp)
 
 project(${MODULE_NAME})
 
-find_package(CallableTraits REQUIRED)
+find_package(Boost REQUIRED)
 
 ###############################################################################
 # Duktape
@@ -48,7 +48,7 @@ target_include_directories(${MODULE_NAME}
 
 target_link_libraries(${MODULE_NAME}
   PUBLIC
-    callable_traits
+    Boost::boost
     dukcpp-duktape # TODO: Try to remove it so users can use their custom Duktape config.
 )
 

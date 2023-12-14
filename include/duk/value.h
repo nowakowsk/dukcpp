@@ -1,6 +1,9 @@
 #ifndef DUKCPP_VALUE_H
 #define DUKCPP_VALUE_H
 
+#include <duk/error.h>
+#include <duk/function.h>
+#include <boost/callable_traits.hpp>
 #include <duktape.h>
 #include <string>
 #include <string_view>
@@ -11,8 +14,15 @@ namespace duk
 {
 
 
-template<typename T>
-concept integer = std::is_integral_v<T> && !std::is_same_v<T, bool>;
+namespace detail
+{
+
+
+template<typename Func, typename ArgIdx>
+struct FunctionWrapper;
+
+
+} // namespace detail
 
 
 template<typename T>
@@ -25,7 +35,7 @@ struct type_traits<T>
 {
   using DecayT = std::decay_t<T>;
 
-  static void push(duk_context* ctx, T value)
+  static void push(duk_context* ctx, auto&& value)
   {
     type_traits<DecayT>::push(ctx, value);
   }
@@ -40,6 +50,74 @@ struct type_traits<T>
   static bool check_type(duk_context* ctx, duk_idx_t idx)
   {
     return type_traits<DecayT>::check_type(ctx, idx);
+  }
+};
+
+
+template<callable func_t>
+struct type_traits<func_t>
+{
+  static void push(duk_context* ctx, auto&& func)
+  {
+    using DecayFunc = std::decay_t<func_t>;
+    using ArgsTuple = boost::callable_traits::args_t<func_t>;
+
+    static constexpr auto argCount = std::tuple_size_v<ArgsTuple>;
+    static constexpr auto funcPropName = DUKCPP_DETAIL_INTERNAL_NAME("func");
+
+    static constexpr auto wrapper = [](duk_context* ctx) -> duk_ret_t
+    {
+      duk_push_current_function(ctx);
+      duk_get_prop_string(ctx, -1, funcPropName);
+      auto funcPtr = static_cast<DecayFunc*>(duk_get_pointer(ctx, -1));
+      duk_pop_2(ctx);
+
+      auto result = detail::FunctionWrapper<func_t, std::make_index_sequence<argCount>>::run(ctx, *funcPtr);
+
+      if (result < 0)
+        return duk_error(ctx, DUK_ERR_TYPE_ERROR, "no matching function found");
+
+      return result;
+    };
+
+    static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
+    {
+      duk_get_prop_string(ctx, 0, funcPropName);
+      auto funcPtr = static_cast<DecayFunc*>(duk_get_pointer(ctx, -1));
+      duk_pop(ctx);
+
+      if constexpr (std::is_destructible_v<DecayFunc>)
+        funcPtr->~DecayFunc();
+
+      duk_free(ctx, funcPtr);
+
+      return 0;
+    };
+
+    auto funcPtr = duk_alloc(ctx, sizeof(func_t));
+    auto funcCopy = new(funcPtr) DecayFunc(std::forward<func_t>(func));
+
+    duk_push_c_function(ctx, wrapper, DUK_VARARGS);
+
+    duk_push_pointer(ctx, funcPtr);
+    duk_put_prop_string(ctx, -2, funcPropName);
+
+    duk_push_c_function(ctx, finalizer, 2);
+    duk_set_finalizer(ctx, -2);
+  }
+
+  [[nodiscard]]
+  static auto pull(duk_context* ctx, duk_idx_t idx)
+  {
+    using Result = boost::callable_traits::return_type_t<func_t>;
+
+    return function<Result(int, int)>{ctx, duk_get_heapptr(ctx, idx)};
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  {
+    return duk_is_function(ctx, idx);
   }
 };
 
@@ -132,6 +210,7 @@ struct type_traits<bool>
 };
 
 
+// TODO: Add support for non-standard strings.
 template<typename T> requires
   std::is_same_v<T, std::string> ||
   std::is_same_v<T, std::string_view>
@@ -159,6 +238,25 @@ struct type_traits<T>
 };
 
 
+// Kinda weird specialization, but it makes certain things easier (e.g. checking void function return value).
+// May be removed if it causes any problems.
+template<>
+struct type_traits<void>
+{
+  // push() is impossible. Removed.
+
+  static void pull(duk_context* ctx, duk_idx_t idx)
+  {
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  {
+    return duk_is_undefined(ctx, idx);
+  }
+};
+
+
 template<typename T>
 void push(duk_context* ctx, T&& value)
 {
@@ -170,6 +268,17 @@ template<typename T>
 [[nodiscard]]
 decltype(auto) pull(duk_context* ctx, duk_idx_t idx)
 {
+  return type_traits<T>::pull(ctx, idx);
+}
+
+
+template<typename T>
+[[nodiscard]]
+decltype(auto) check_type_and_pull(duk_context* ctx, duk_idx_t idx)
+{
+  if (!type_traits<T>::check_type(ctx, idx))
+    throw error("Unexpected type.");
+
   return type_traits<T>::pull(ctx, idx);
 }
 

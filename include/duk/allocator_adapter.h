@@ -34,8 +34,7 @@ public:
     auto self = static_cast<allocator_adapter*>(udata);
 
     auto ptr = self->allocator_.allocate(sizeof(BlockInfo) + size);
-    auto blockInfo = reinterpret_cast<BlockInfo*>(ptr);
-    blockInfo->size = size;
+    auto blockInfo = new (ptr) BlockInfo{size};
     
     return ptr + sizeof(BlockInfo);
   }
@@ -65,6 +64,8 @@ public:
 
     auto self = static_cast<allocator_adapter*>(udata);
     auto blockInfo = blockInfoFromPtr(ptr);
+
+    blockInfo->~BlockInfo();
 
     self->allocator_.deallocate(
       reinterpret_cast<std::allocator_traits<allocator_t>::pointer>(blockInfo),
