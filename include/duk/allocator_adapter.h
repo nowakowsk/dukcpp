@@ -3,6 +3,7 @@
 
 #include <duktape.h>
 #include <memory>
+#include <cstring>
 
 
 namespace duk

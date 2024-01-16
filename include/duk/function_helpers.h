@@ -1,7 +1,7 @@
 #ifndef DUKCPP_FUNCTION_HELPERS_H
 #define DUKCPP_FUNCTION_HELPERS_H
 
-#include <duk/value.h>
+#include <duk/type_traits.h>
 #include <duk/detail/function_wrapper.h>
 #include <duktape.h>
 #include <string_view>

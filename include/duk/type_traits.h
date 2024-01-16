@@ -1,5 +1,5 @@
-#ifndef DUKCPP_VALUE_H
-#define DUKCPP_VALUE_H
+#ifndef DUKCPP_TYPE_TRAITS_H
+#define DUKCPP_TYPE_TRAITS_H
 
 #include <duk/error.h>
 #include <duk/function.h>
@@ -257,33 +257,7 @@ struct type_traits<void>
 };
 
 
-template<typename T>
-void push(duk_context* ctx, T&& value)
-{
-  type_traits<T>::push(ctx, std::forward<T>(value));
-}
-
-
-template<typename T>
-[[nodiscard]]
-decltype(auto) pull(duk_context* ctx, duk_idx_t idx)
-{
-  return type_traits<T>::pull(ctx, idx);
-}
-
-
-template<typename T>
-[[nodiscard]]
-decltype(auto) check_type_and_pull(duk_context* ctx, duk_idx_t idx)
-{
-  if (!type_traits<T>::check_type(ctx, idx))
-    throw error("Unexpected type.");
-
-  return type_traits<T>::pull(ctx, idx);
-}
-
-
 } // namespace duk
 
 
-#endif // DUKCPP_VALUE_H
+#endif // DUKCPP_TYPE_TRAITS_H

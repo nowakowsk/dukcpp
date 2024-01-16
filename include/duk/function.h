@@ -4,6 +4,7 @@
 #include <duk/error.h>
 #include <duk/common.h>
 #include <duk/scoped_pop.h>
+#include <duk/type_traits_helpers.h>
 #include <duktape.h>
 #include <type_traits>
 
@@ -32,7 +33,7 @@ public:
     using Result = boost::callable_traits::return_type_t<T>;
 
     duk_push_heapptr(ctx_, heapPtr_);
-    (type_traits<decltype(args)>::push(ctx_, args), ...);
+    (push(ctx_, std::forward<decltype(args)>(args)), ...);
     duk_call(ctx_, sizeof...(args));
 
     scoped_pop _(ctx_); // Pop return value.

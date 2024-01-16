@@ -5,7 +5,8 @@
 #include <duk/error.h>
 #include <duk/common.h>
 #include <duk/context.h>
-#include <duk/value.h>
+#include <duk/type_traits.h>
+#include <duk/type_traits_helpers.h>
 #include <duk/function.h>
 #include <duk/function_helpers.h>
 

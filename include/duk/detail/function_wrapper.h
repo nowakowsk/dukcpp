@@ -1,7 +1,7 @@
 #ifndef DUKCPP_DETAIL_FUNCTION_WRAPPER_H
 #define DUKCPP_DETAIL_FUNCTION_WRAPPER_H
 
-#include <duk/value.h>
+#include <duk/type_traits.h>
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
 #include <functional>
