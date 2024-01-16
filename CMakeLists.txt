@@ -30,12 +30,17 @@ add_duktape_library(dukcpp-duktape "${DUKCPP_DUKTAPE_PATH}" ${DUKTAPE_OPTIONS})
 # dukcpp
 
 add_library(${MODULE_NAME}
+  include/duk/detail/function_wrapper.h
   include/duk/allocator_adapter.h
+  include/duk/common.h
   include/duk/context.h
   include/duk/duk.h
   include/duk/error.h
+  include/duk/function_helpers.h
   include/duk/function.h
-  include/duk/value.h
+  include/duk/scoped_pop.h
+  include/duk/type_traits_helpers.h
+  include/duk/type_traits.h
 
   src/context.cpp
   src/error.cpp
