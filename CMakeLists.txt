@@ -43,7 +43,6 @@ add_library(${MODULE_NAME}
   include/duk/type_traits.h
 
   src/context.cpp
-  src/error.cpp
 )
 
 target_include_directories(${MODULE_NAME}

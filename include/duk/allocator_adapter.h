@@ -10,11 +10,11 @@ namespace duk
 {
 
 
-template<typename allocator_t = std::allocator<std::byte>>
+template<typename Allocator = std::allocator<std::byte>>
 class allocator_adapter final
 {
-  static_assert(sizeof(typename std::allocator_traits<allocator_t>::value_type) == 1);
-  static_assert(std::is_trivial_v<typename std::allocator_traits<allocator_t>::value_type>);
+  static_assert(sizeof(typename std::allocator_traits<Allocator>::value_type) == 1);
+  static_assert(std::is_trivial_v<typename std::allocator_traits<Allocator>::value_type>);
 
   struct BlockInfo final
   {
@@ -24,7 +24,7 @@ class allocator_adapter final
   static_assert(std::is_trivial_v<BlockInfo>);
 
 public:
-  allocator_adapter(const allocator_t& allocator = {}) :
+  allocator_adapter(const Allocator& allocator = {}) :
     allocator_(allocator)
   {
   }
@@ -69,7 +69,7 @@ public:
     blockInfo->~BlockInfo();
 
     self->allocator_.deallocate(
-      reinterpret_cast<std::allocator_traits<allocator_t>::pointer>(blockInfo),
+      reinterpret_cast<std::allocator_traits<Allocator>::pointer>(blockInfo),
       sizeof(BlockInfo) + blockInfo->size
     );
   }
@@ -79,11 +79,11 @@ private:
   static BlockInfo* blockInfoFromPtr(void* ptr)
   {
     return reinterpret_cast<BlockInfo*>(
-      static_cast<std::allocator_traits<allocator_t>::pointer>(ptr) - sizeof(BlockInfo)
+      static_cast<std::allocator_traits<Allocator>::pointer>(ptr) - sizeof(BlockInfo)
     );
   }
 
-  allocator_t allocator_;
+  Allocator allocator_;
 };
 
 

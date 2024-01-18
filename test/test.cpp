@@ -66,12 +66,12 @@ TEST_CASE_METHOD(DukCppTest, "Register functor")
   ctx_.release();
 
   REQUIRE(observer.countersWithinLimits({
-    .ctorCount{1},
-    .dtorCount{2},
-    .copyCtorCount{0},
-    .moveCtorCount{1},
-    .copyAssignmentCount{0},
-    .moveAssignmentCount{0}
+    .ctorCount = 1,
+    .dtorCount = 2,
+    .copyCtorCount = 0,
+    .moveCtorCount = 1,
+    .copyAssignmentCount = 0,
+    .moveAssignmentCount = 0
   }));
 
   REQUIRE(observer.ctorDtorCountMatch());

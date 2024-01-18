@@ -1,12 +1,10 @@
 #ifndef DUKCPP_FUNCTION_H
 #define DUKCPP_FUNCTION_H
 
-#include <duk/error.h>
 #include <duk/common.h>
 #include <duk/scoped_pop.h>
 #include <duk/type_traits_helpers.h>
 #include <duktape.h>
-#include <type_traits>
 
 
 namespace duk
@@ -42,8 +40,8 @@ public:
   }
 
 private:
-  duk_context* ctx_ = nullptr;
-  void* heapPtr_ = nullptr;
+  duk_context* ctx_;
+  void* heapPtr_;
 };
 
 

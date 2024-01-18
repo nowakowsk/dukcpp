@@ -2,7 +2,6 @@
 #define DUKCPP_ERROR_H
 
 #include <stdexcept>
-#include <string>
 
 
 namespace duk
@@ -12,8 +11,7 @@ namespace duk
 class error : public std::runtime_error
 {
 public:
-  error(const std::string& what);
-  error(const char* what);
+  using std::runtime_error::runtime_error;
 };
 
 

@@ -29,8 +29,8 @@ public:
   scoped_pop& operator=(scoped_pop&&) = delete;
 
 private:
-  duk_context* ctx_ = nullptr;
-  duk_idx_t count_ = 1;
+  duk_context* ctx_;
+  duk_idx_t count_;
 };
 
 
