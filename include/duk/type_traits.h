@@ -211,6 +211,7 @@ struct type_traits<bool>
 
 
 // TODO: Add support for non-standard strings.
+// TODO: Generalize support for std::string to enable custom allocators.
 template<typename T> requires
   std::is_same_v<T, std::string> ||
   std::is_same_v<T, std::string_view>

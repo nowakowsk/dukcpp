@@ -1,5 +1,5 @@
-#ifndef DUKCPP_ALLOC_ADAPTER_H
-#define DUKCPP_ALLOC_ADAPTER_H
+#ifndef DUKCPP_ALLOCATOR_ADAPTER_H
+#define DUKCPP_ALLOCATOR_ADAPTER_H
 
 #include <duktape.h>
 #include <memory>
@@ -90,4 +90,4 @@ private:
 } // namespace duk
 
 
-#endif // DUKCPP_ALLOC_ADAPTER_H
+#endif // DUKCPP_ALLOCATOR_ADAPTER_H

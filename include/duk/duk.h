@@ -1,7 +1,9 @@
 #ifndef DUKCPP_DUK_H
 #define DUKCPP_DUK_H
 
+#include <duk/allocator.h>
 #include <duk/allocator_adapter.h>
+#include <duk/detail/memory_resource.h>
 #include <duk/error.h>
 #include <duk/common.h>
 #include <duk/context.h>

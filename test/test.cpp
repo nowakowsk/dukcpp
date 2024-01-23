@@ -1,6 +1,8 @@
 #include "lifetime.h"
-#include <catch2/catch_test_macros.hpp>
 #include <duk/duk.h>
+#include <catch2/catch_test_macros.hpp>
+#include <stdexcept>
+#include <string>
 
 
 struct DukCppTest
@@ -9,7 +11,7 @@ struct DukCppTest
 
   static void errorHandler(void* udata, const char* message)
   {
-    throw duk::error(message);
+    throw std::runtime_error(message);
   }
 
   DukCppTest() :
@@ -125,6 +127,17 @@ TEST_CASE_METHOD(DukCppTest, "Register function (function argument)")
   duk_eval_string(ctx_, R"__(
     function f() { return 3; }
     multiply(10, f);
-  )__");    
+  )__");
   REQUIRE(duk::pull<int>(ctx_, -1) == 30);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Allocator")
+{
+  using string = std::basic_string<char, std::char_traits<char>, duk::allocator<char>>;
+
+  auto s1 = string{"s1", duk::allocator<char>(ctx_)};
+  auto s2 = string{"s2", duk::allocator<char>(ctx_)};
+
+  REQUIRE(s1 + s2 == "s1s2");
 }

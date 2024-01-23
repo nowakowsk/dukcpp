@@ -28,8 +28,10 @@ concept callable =
   };
 
 
+// TODO: Consider removing.
+/*
 template<typename T>
-auto alloc(duk_context* ctx, auto&&... args)
+auto make(duk_context* ctx, auto&&... args)
 {
   auto objBuffer = duk_alloc(ctx, sizeof(T));
 
@@ -51,6 +53,7 @@ void free(duk_context* ctx, T* ptr)
 
   duk_free(ctx, ptr);
 }
+*/
 
 
 } // namespace duk

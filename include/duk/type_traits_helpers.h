@@ -35,7 +35,7 @@ template<typename T>
 decltype(auto) check_type_and_pull(duk_context* ctx, duk_idx_t idx)
 {
   if (!type_traits<T>::check_type(ctx, idx))
-    throw error("Unexpected type.");
+    throw error(ctx, "Unexpected type.");
 
   return type_traits<T>::pull(ctx, idx);
 }
