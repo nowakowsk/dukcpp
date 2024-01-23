@@ -10,7 +10,7 @@ namespace duk
 
 
 template<typename T>
-class allocator final
+class allocator
 {
 public:
   using value_type = T;
