@@ -141,3 +141,22 @@ TEST_CASE_METHOD(DukCppTest, "Allocator")
 
   REQUIRE(s1 + s2 == "s1s2");
 }
+
+
+TEST_CASE_METHOD(DukCppTest, "Safe handle (function)")
+{
+  duk_eval_string(ctx_, "function f() { return 123; }; (f);");
+
+  auto funcHandle = duk::safe_handle(duk::handle(ctx_, -1));
+  auto func = duk::function<int()>(funcHandle.get());
+
+  duk_pop(ctx_); // Pop function.
+
+  // Make sure function is available for gc.
+  // https://duktape.org/guide#limitations.12
+  duk_eval_string(ctx_, "f.prototype = null; f = null;");
+
+  duk_gc(ctx_, 0);
+
+  REQUIRE(func() == 123);
+}

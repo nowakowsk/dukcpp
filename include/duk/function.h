@@ -2,6 +2,7 @@
 #define DUKCPP_FUNCTION_H
 
 #include <duk/common.h>
+#include <duk/handle.h>
 #include <duk/scoped_pop.h>
 #include <duk/type_traits_helpers.h>
 #include <duktape.h>
@@ -20,9 +21,8 @@ template<callable T>
 class function
 {
 public:
-  function(duk_context* ctx, void* heap_ptr) :
-    ctx_(ctx),
-    heapPtr_(heap_ptr)
+  function(const handle& handle) :
+    handle_(handle)
   {
   }
 
@@ -30,18 +30,17 @@ public:
   {
     using Result = boost::callable_traits::return_type_t<T>;
 
-    duk_push_heapptr(ctx_, heapPtr_);
-    (push(ctx_, std::forward<decltype(args)>(args)), ...);
-    duk_call(ctx_, sizeof...(args));
+    duk_push_heapptr(handle_.ctx, handle_.heap_ptr);
+    (push(handle_.ctx, std::forward<decltype(args)>(args)), ...);
+    duk_call(handle_.ctx, sizeof...(args));
 
-    scoped_pop _(ctx_); // Pop return value.
+    scoped_pop _(handle_.ctx); // Pop return value.
 
-    return check_type_and_pull<Result>(ctx_, -1);
+    return check_type_and_pull<Result>(handle_.ctx, -1);
   }
 
 private:
-  duk_context* ctx_;
-  void* heapPtr_;
+  handle handle_;
 };
 
 

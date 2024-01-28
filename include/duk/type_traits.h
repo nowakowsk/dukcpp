@@ -111,7 +111,7 @@ struct type_traits<func_t>
   {
     using Result = boost::callable_traits::return_type_t<func_t>;
 
-    return function<Result(int, int)>{ctx, duk_get_heapptr(ctx, idx)};
+    return function<Result(int, int)>({ctx, duk_get_heapptr(ctx, idx)});
   }
 
   [[nodiscard]]

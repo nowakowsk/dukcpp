@@ -28,15 +28,13 @@ concept callable =
   };
 
 
-// TODO: Consider removing.
-/*
 template<typename T>
 auto make(duk_context* ctx, auto&&... args)
 {
   auto objBuffer = duk_alloc(ctx, sizeof(T));
 
   if (!objBuffer)
-    throw error("Memory allocation failed.");
+    throw error(ctx, "Memory allocation failed.");
 
   return new (objBuffer) T(std::forward<decltype(args)>(args)...);
 }
@@ -53,7 +51,6 @@ void free(duk_context* ctx, T* ptr)
 
   duk_free(ctx, ptr);
 }
-*/
 
 
 } // namespace duk

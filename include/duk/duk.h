@@ -7,9 +7,11 @@
 #include <duk/error.h>
 #include <duk/common.h>
 #include <duk/context.h>
+#include <duk/handle.h>
 #include <duk/type_traits.h>
 #include <duk/type_traits_helpers.h>
 #include <duk/function.h>
 #include <duk/function_helpers.h>
+#include <duk/safe_handle.h>
 
 #endif // DUKCPP_DUK_H
