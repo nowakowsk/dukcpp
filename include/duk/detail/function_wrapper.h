@@ -63,7 +63,7 @@ duk_ret_t overloadedFunctionWrapper(duk_context* ctx)
   duk_ret_t result;
 
   if ((((result = functionWrapper<funcs>(ctx)) < 0) && ...))
-    return duk_error(ctx, DUK_ERR_TYPE_ERROR, "no matching function found");
+    return duk_error(ctx, DUK_ERR_TYPE_ERROR, "No matching function overload found.");
 
   return result;
 }

@@ -3,10 +3,9 @@
 
 #include <duk/error.h>
 #include <duk/function.h>
+#include <duk/string_traits.h>
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
-#include <string>
-#include <string_view>
 #include <type_traits>
 
 
@@ -210,16 +209,14 @@ struct type_traits<bool>
 };
 
 
-// TODO: Add support for non-standard strings.
-// TODO: Generalize support for std::string to enable custom allocators.
-template<typename T> requires
-  std::is_same_v<T, std::string> ||
-  std::is_same_v<T, std::string_view>
+template<string_type T>
 struct type_traits<T>
 {
   static void push(duk_context* ctx, const T& value)
   {
-    duk_push_lstring(ctx, value.data(), value.size());
+    auto strInfo = string_traits<T>::info(value);
+
+    duk_push_lstring(ctx, strInfo.first, strInfo.second);
   }
 
   [[nodiscard]]
@@ -228,7 +225,7 @@ struct type_traits<T>
     duk_size_t size;
     auto string = duk_get_lstring(ctx, idx, &size);
 
-    return { string, size };
+    return string_traits<T>::make(string, size);
   }
 
   [[nodiscard]]
@@ -240,11 +237,11 @@ struct type_traits<T>
 
 
 // Kinda weird specialization, but it makes certain things easier (e.g. checking void function return value).
-// May be removed if it causes any problems.
+// May be removed if it causes problems.
 template<>
 struct type_traits<void>
 {
-  // push() is impossible. Removed.
+  // push() is impossible. Not implemented.
 
   static void pull(duk_context* ctx, duk_idx_t idx)
   {

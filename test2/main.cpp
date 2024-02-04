@@ -36,10 +36,10 @@ int main()
   duk::context ctx(duk_create_heap_default());
 
   duk_push_global_object(ctx);
-  duk::register_function<add>(ctx, -1, "add");
-  duk::register_function<stringN>(ctx, -1, "stringN");
-  duk::register_function<noargs>(ctx, -1, "noargs");
-  duk::register_function<
+  duk::put_function<add>(ctx, -1, "add");
+  duk::put_function<stringN>(ctx, -1, "stringN");
+  duk::put_function<noargs>(ctx, -1, "noargs");
+  duk::put_function<
     static_cast<void(*)(int)>(overloaded),
     static_cast<void(*)(std::string_view)>(overloaded)
   >(ctx, -1, "overloaded");

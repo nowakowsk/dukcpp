@@ -1,6 +1,7 @@
 #include "lifetime.h"
 #include <duk/duk.h>
 #include <catch2/catch_test_macros.hpp>
+#include <cstring>
 #include <stdexcept>
 #include <string>
 
@@ -32,7 +33,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (value arguments)")
   };
 
   duk_push_global_object(ctx_);
-  duk::register_function<addFunc>(ctx_, -1, "addFunc");
+  duk::put_function<addFunc>(ctx_, -1, "addFunc");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "addFunc(1, 2)");
@@ -48,7 +49,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (reference arguments)")
   };
 
   duk_push_global_object(ctx_);
-  duk::register_function<addFunc>(ctx_, -1, "addFunc");
+  duk::put_function<addFunc>(ctx_, -1, "addFunc");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "addFunc(1, 2)");
@@ -61,7 +62,7 @@ TEST_CASE_METHOD(DukCppTest, "Register functor")
   Lifetime::Observer observer;
 
   duk_push_global_object(ctx_);
-  duk::register_function(ctx_, -1, "func", Lifetime{observer});
+  duk::put_function(ctx_, -1, "func", Lifetime{observer});
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "func()");
@@ -88,7 +89,7 @@ TEST_CASE_METHOD(DukCppTest, "Register lambda with capture list")
   };
 
   duk_push_global_object(ctx_);
-  duk::register_function(ctx_, -1, "multiply", multiply);
+  duk::put_function(ctx_, -1, "multiply", multiply);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "multiply(10)");
@@ -121,7 +122,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (function argument)")
   };
 
   duk_push_global_object(ctx_);
-  duk::register_function(ctx_, -1, "multiply", multiply);
+  duk::put_function(ctx_, -1, "multiply", multiply);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, R"__(
@@ -148,15 +149,38 @@ TEST_CASE_METHOD(DukCppTest, "Safe handle (function)")
   duk_eval_string(ctx_, "function f() { return 123; }; (f);");
 
   auto funcHandle = duk::safe_handle(duk::handle(ctx_, -1));
-  auto func = duk::function<int()>(funcHandle.get());
 
   duk_pop(ctx_); // Pop function.
 
-  // Make sure function is available for gc.
+  // Make sure function is available for reclamation by gc.
   // https://duktape.org/guide#limitations.12
   duk_eval_string(ctx_, "f.prototype = null; f = null;");
 
   duk_gc(ctx_, 0);
 
+  auto func = duk::function<int()>(funcHandle.get());
+
   REQUIRE(func() == 123);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Push and pull std::string")
+{
+  duk::push<std::string>(ctx_, "test string");
+  REQUIRE(duk::pull<std::string>(ctx_, -1) == "test string");
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Push and pull std::string_view")
+{
+  duk::push<std::string_view>(ctx_, "test string");
+  auto result = (duk::pull<std::string_view>(ctx_, -1) == "test string");
+  REQUIRE(result); // Needed because of some stringification issues in Catch2. Not sure what is going on here.
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Push and pull const char*")
+{
+  duk::push<const char*>(ctx_, "test string");
+  REQUIRE(std::strcmp(duk::pull<const char*>(ctx_, -1), "test string") == 0);
 }

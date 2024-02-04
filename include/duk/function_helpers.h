@@ -22,7 +22,7 @@ duk_idx_t push_function(duk_context* ctx)
 
 
 template<auto ...funcs>
-void register_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
+void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
 {
   push_function<funcs...>(ctx);
   duk_put_prop_lstring(ctx, idx - 1, name.data(), name.length());
@@ -37,7 +37,7 @@ void push_function(duk_context* ctx, func_t&& func)
 
 
 template<typename func_t>
-void register_function(duk_context* ctx, duk_idx_t idx, std::string_view name, func_t&& func)
+void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name, func_t&& func)
 {
   push_function(ctx, std::forward<func_t>(func));
   duk_put_prop_lstring(ctx, idx - 1, name.data(), name.length());
