@@ -5,12 +5,68 @@
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
 #include <functional>
+#include <string_view>
 #include <tuple>
 #include <utility>
 
 
 namespace duk::detail
 {
+
+
+static duk_ret_t throwESError(duk_context* ctx, duk_errcode_t errorCode, std::string_view message)
+{
+  duk_int_t lineNumber = 0;
+  const char* fileName = nullptr;
+  duk_int_t level = -1;
+
+  // Loop until we find the first ES function on the call stack. C functions don't have file name set.
+  while (!fileName)
+  {
+    duk_inspect_callstack_entry(ctx, level);
+
+    if (duk_is_undefined(ctx, -1))
+    {
+      duk_pop(ctx);
+      break;
+    }
+
+    if (duk_get_prop_string(ctx, -1, "lineNumber"))
+      lineNumber = duk_to_int(ctx, -1);
+    duk_pop(ctx);
+
+    if (duk_get_prop_string(ctx, -1, "function"))
+    {
+      if (duk_get_prop_string(ctx, -1, "fileName"))
+        fileName = duk_to_string(ctx, -1);
+      duk_pop(ctx);
+    }
+    duk_pop(ctx);
+
+    duk_pop(ctx); // callstack info
+
+    level--;
+  }
+
+  // NOTE: Null error message isn't documented. It seems to be working, but could cause problems.
+  duk_push_error_object(ctx, errorCode, nullptr);
+
+  if (fileName)
+  {
+    duk_push_int(ctx, lineNumber);
+    duk_put_prop_string(ctx, -2, "lineNumber");
+
+    duk_push_string(ctx, fileName);
+    duk_put_prop_string(ctx, -2, "fileName");
+  }
+
+  duk_push_lstring(ctx, message.data(), message.size());
+  duk_put_prop_string(ctx, -2, "message");
+
+  duk_throw(ctx);
+
+  return 0; // Return code doesn't matter.
+}
 
 
 template<typename Func, typename ArgIdx>
@@ -63,7 +119,7 @@ duk_ret_t overloadedFunctionWrapper(duk_context* ctx)
   duk_ret_t result;
 
   if ((((result = functionWrapper<funcs>(ctx)) < 0) && ...))
-    return duk_error(ctx, DUK_ERR_TYPE_ERROR, "No matching function overload found.");
+    return throwESError(ctx, DUK_ERR_TYPE_ERROR, "No matching function overload found.");
 
   return result;
 }
