@@ -13,6 +13,7 @@ find_package(Boost REQUIRED
 # duk
 
 add_executable(${MODULE_NAME}
+  debugger.cpp
   main.cpp
   options.cpp
 )

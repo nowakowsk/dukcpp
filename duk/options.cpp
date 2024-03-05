@@ -11,7 +11,7 @@ Options parseOptions(int argc, char* argv[])
   optionsDesc.add_options()
     ("help,h", "show help")
     ("input,i", po::value<decltype(Options::input)>()->required(), "input file")
-    ("debug,d", po::value<decltype(Options::debug)>()->default_value(false), "enable debugger")
+    ("debug,d", po::value<decltype(Options::debug)>()->default_value(false)->implicit_value(true), "enable debugger")
     ("port,p", po::value<decltype(Options::debugPort)>()->default_value(Options::defaultDebugPort), "debugger port");
 
   po::variables_map optionsMap;

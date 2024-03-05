@@ -1,8 +1,11 @@
+#include "debugger.h"
 #include "options.h"
+#include <duk/duk.h>
 #include <exception>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
-#include <duk/duk.h>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -74,30 +77,35 @@ int main(int argc, char* argv[])
     auto options = parseOptions(argc, argv);
     auto ctx = duk::context(duk_create_heap(nullptr, nullptr, nullptr, nullptr, errorHandler));
     auto source = readFile(options.input);
+    auto fileName = std::filesystem::path(options.input).filename().string();
 
     duk_push_global_object(ctx);
     duk::put_function<print>(ctx, -1, "print");
     duk_pop(ctx);
 
-    duk_push_lstring(ctx, options.input.data(), options.input.size());
+    duk_push_string(ctx, fileName.c_str());
     if (duk_pcompile_lstring_filename(ctx, 0, source.data(), source.size()) != 0)
     {
       throw std::runtime_error(duktapeErrorToString(ctx, -1));
     }
     else
     {
+      std::optional<DebuggerContext> debugCtx;
+      if (options.debug)
+        debugCtx.emplace(ctx, options.debugPort);
+
       if (duk_pcall(ctx, 0) != DUK_EXEC_SUCCESS)
         throw std::runtime_error(duktapeErrorToString(ctx, -1));
     }
   }
   catch (std::exception& e)
   {
-    std::cerr << e.what() << '\n';
+    std::cerr << '\n' << e.what() << '\n';
     return 1;
   }
   catch (...)
   {
-    std::cerr << "Unknown error\n";
+    std::cerr << "\nUnknown error\n";
     return 1;
   }
 }
