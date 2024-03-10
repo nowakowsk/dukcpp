@@ -12,6 +12,7 @@ namespace duk
 {
 
 
+// Non-owning handle to Duktape function.
 template<callable T>
 class function
 {

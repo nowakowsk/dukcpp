@@ -73,7 +73,6 @@ struct type_traits<func_t>
       duk_pop_2(ctx);
 
       auto result = detail::FunctionWrapper<func_t, std::make_index_sequence<argCount>>::run(ctx, *funcPtr);
-
       if (result < 0)
         return duk_error(ctx, DUK_ERR_TYPE_ERROR, "no matching function found");
 
@@ -105,9 +104,9 @@ struct type_traits<func_t>
   [[nodiscard]]
   static auto pull(duk_context* ctx, duk_idx_t idx)
   {
-    using Result = boost::callable_traits::return_type_t<func_t>;
+    using Func = boost::callable_traits::function_type_t<func_t>;
 
-    return function<Result(int, int)>({ctx, duk_get_heapptr(ctx, idx)});
+    return function<Func>({ctx, idx});
   }
 
   [[nodiscard]]
