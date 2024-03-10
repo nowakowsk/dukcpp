@@ -1,6 +1,7 @@
 #ifndef DUKCPP_TYPE_TRAITS_H
 #define DUKCPP_TYPE_TRAITS_H
 
+#include <duk/common.h>
 #include <duk/error.h>
 #include <duk/function.h>
 #include <duk/string_traits.h>
@@ -85,16 +86,12 @@ struct type_traits<func_t>
       auto funcPtr = static_cast<DecayFunc*>(duk_get_pointer(ctx, -1));
       duk_pop(ctx);
 
-      if constexpr (std::is_destructible_v<DecayFunc>)
-        funcPtr->~DecayFunc();
-
-      duk_free(ctx, funcPtr);
+      free(ctx, funcPtr);
 
       return 0;
     };
 
-    auto funcPtr = duk_alloc(ctx, sizeof(func_t));
-    auto funcCopy = new(funcPtr) DecayFunc(std::forward<func_t>(func));
+    auto funcPtr = make<DecayFunc>(ctx, std::forward<func_t>(func));
 
     duk_push_c_function(ctx, wrapper, DUK_VARARGS);
 
@@ -216,7 +213,7 @@ struct type_traits<T>
   {
     auto strInfo = string_traits<T>::info(value);
 
-    duk_push_lstring(ctx, strInfo.first, strInfo.second);
+    duk_push_lstring(ctx, strInfo.ptr, strInfo.size);
   }
 
   [[nodiscard]]

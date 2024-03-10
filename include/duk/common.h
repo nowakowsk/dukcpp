@@ -1,10 +1,10 @@
 #ifndef DUKCPP_COMMON_H
 #define DUKCPP_COMMON_H
 
+#include <duk/allocator.h>
 #include <duk/error.h>
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
-#include <type_traits>
 #include <utility>
 
 
@@ -29,10 +29,10 @@ concept callable =
 
 
 template<typename T>
-auto make(duk_context* ctx, auto&&... args)
+[[nodiscard]]
+auto* make(duk_context* ctx, auto&&... args)
 {
-  auto objBuffer = duk_alloc(ctx, sizeof(T));
-
+  auto objBuffer = allocator<T>(ctx).allocate(1);
   if (!objBuffer)
     throw error(ctx, "Memory allocation failed.");
 
@@ -49,7 +49,7 @@ void free(duk_context* ctx, T* ptr)
   if constexpr (std::is_destructible_v<T>)
     ptr->~T();
 
-  duk_free(ctx, ptr);
+  allocator<T>(ctx).deallocate(ptr, 1);
 }
 
 

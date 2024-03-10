@@ -8,6 +8,7 @@ namespace duk
 {
 
 
+// Non-owning handle to a Duktape heap object.
 struct handle final
 {
   handle(duk_context* ctx, void* heap_ptr) noexcept :

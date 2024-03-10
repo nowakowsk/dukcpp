@@ -16,11 +16,18 @@ template<typename T>
 struct string_traits;
 
 
+struct string_info final
+{
+  const char* ptr;
+  duk_size_t size;
+};
+
+
 template<typename T>
 concept string_type = requires(T str, const char* char_str, duk_size_t size)
 {
   { string_traits<T>::make(char_str, size) } -> std::same_as<T>;
-  { string_traits<T>::info(str) } -> std::same_as<std::pair<const char*, duk_size_t>>;
+  { string_traits<T>::info(str) } -> std::same_as<string_info>;
 };
 
 
@@ -38,7 +45,7 @@ struct std_string_traits_impl
   }
 
   [[nodiscard]]
-  static std::pair<const char*, duk_size_t> info(const T& str)
+  static string_info info(const T& str)
   {
     return { str.data(), str.size() };
   }
@@ -75,7 +82,7 @@ struct string_traits<const char*>
   }
 
   [[nodiscard]]
-  static std::pair<const char*, duk_size_t> info(const char* str)
+  static string_info info(const char* str)
   {
     return { str, std::strlen(str) };
   }

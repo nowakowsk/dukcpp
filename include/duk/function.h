@@ -12,11 +12,6 @@ namespace duk
 {
 
 
-// Forward declarations
-template<typename T>
-struct type_traits;
-
-
 template<callable T>
 class function
 {

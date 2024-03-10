@@ -37,13 +37,14 @@ static duk_ret_t throwESError(duk_context* ctx, duk_errcode_t errorCode, std::st
 
     if (duk_get_prop_string(ctx, -1, "function"))
     {
+      // NOTE: I am not sure if fileName remains valid after popping callstack info.
       if (duk_get_prop_string(ctx, -1, "fileName"))
         fileName = duk_to_string(ctx, -1);
       duk_pop(ctx);
     }
     duk_pop(ctx);
 
-    duk_pop(ctx); // callstack info
+    duk_pop(ctx); // Pop callstack info.
 
     level--;
   }

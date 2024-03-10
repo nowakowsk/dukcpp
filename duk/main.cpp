@@ -2,7 +2,6 @@
 #include "options.h"
 #include <duk/duk.h>
 #include <exception>
-#include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <optional>
@@ -40,6 +39,7 @@ void print(const char* text)
 }
 
 
+[[nodiscard]]
 std::string duktapeErrorToString(duk_context* ctx, duk_idx_t objIdx)
 {
   std::string name("-");
@@ -77,13 +77,12 @@ int main(int argc, char* argv[])
     auto options = parseOptions(argc, argv);
     auto ctx = duk::context(duk_create_heap(nullptr, nullptr, nullptr, nullptr, errorHandler));
     auto source = readFile(options.input);
-    auto fileName = std::filesystem::path(options.input).filename().string();
 
     duk_push_global_object(ctx);
     duk::put_function<print>(ctx, -1, "print");
     duk_pop(ctx);
 
-    duk_push_string(ctx, fileName.c_str());
+    duk_push_string(ctx, options.input.c_str());
     if (duk_pcompile_lstring_filename(ctx, 0, source.data(), source.size()) != 0)
     {
       throw std::runtime_error(duktapeErrorToString(ctx, -1));

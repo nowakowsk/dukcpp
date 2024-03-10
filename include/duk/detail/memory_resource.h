@@ -23,13 +23,18 @@ public:
 
 private:
   [[nodiscard]]
-  virtual void* do_allocate(std::size_t bytes, [[maybe_unused]] std::size_t alignment) override
+  virtual void* do_allocate(
+    std::size_t bytes,
+    [[maybe_unused]] std::size_t alignment
+  ) override
   {
     return duk_alloc(ctx_, bytes);
   }
 
   virtual void do_deallocate(
-    void* ptr, [[maybe_unused]] std::size_t bytes, [[maybe_unused]] std::size_t alignment
+    void* ptr,
+    [[maybe_unused]] std::size_t bytes,
+    [[maybe_unused]] std::size_t alignment
   ) override
   {
     duk_free(ctx_, ptr);

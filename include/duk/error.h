@@ -16,7 +16,7 @@ class error : public std::exception
 {
 public:
   error(duk_context* ctx, std::string_view message) :
-    message_(message, allocator<char>(ctx))
+    message_(make_string(ctx, message))
   {
   }
 
