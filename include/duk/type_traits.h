@@ -115,7 +115,7 @@ struct type_traits
 };
 
 
-// TODO: Treats references as values. It's easy and safe, but will result in unnecessary copies.
+// TODO: Treats references as values. It's easy and should be safe, but will result in unnecessary copies.
 template<typename T> requires std::is_reference_v<T>
 struct type_traits<T>
 {
@@ -152,6 +152,8 @@ struct type_traits<func_t>
     using ArgsTuple = boost::callable_traits::args_t<func_t>;
 
     static constexpr auto argCount = std::tuple_size_v<ArgsTuple>;
+
+    // TODO: Use index property instead of named property?
     static constexpr auto funcPropName = DUKCPP_DETAIL_INTERNAL_NAME("func");
 
     static constexpr auto wrapper = [](duk_context* ctx) -> duk_ret_t
@@ -299,9 +301,9 @@ struct type_traits<T>
 {
   static void push(duk_context* ctx, const T& value)
   {
-    auto strInfo = string_traits<T>::info(value);
+    auto str = string_traits<T>::make_view(value);
 
-    duk_push_lstring(ctx, strInfo.ptr, strInfo.size);
+    duk_push_lstring(ctx, str.data(), str.size());
   }
 
   [[nodiscard]]
@@ -310,7 +312,7 @@ struct type_traits<T>
     duk_size_t size;
     auto string = duk_get_lstring(ctx, idx, &size);
 
-    return string_traits<T>::make(string, size);
+    return string_traits<T>::make_string(string, size);
   }
 
   [[nodiscard]]

@@ -16,18 +16,11 @@ template<typename T>
 struct string_traits;
 
 
-struct string_info final
-{
-  const char* ptr;
-  duk_size_t size;
-};
-
-
 template<typename T>
 concept string_type = requires(T str, const char* char_str, duk_size_t size)
 {
-  { string_traits<T>::make(char_str, size) } -> std::same_as<T>;
-  { string_traits<T>::info(str) } -> std::same_as<string_info>;
+  { string_traits<T>::make_string(char_str, size) } -> std::same_as<T>;
+  { string_traits<T>::make_view(str) } -> std::same_as<std::string_view>;
 };
 
 
@@ -39,15 +32,15 @@ template<typename T>
 struct std_string_traits_impl
 {
   [[nodiscard]]
-  static T make(const char* str, duk_size_t size)
+  static T make_string(const char* str, duk_size_t size)
   {
     return { str, size };
   }
 
   [[nodiscard]]
-  static string_info info(const T& str)
+  static std::string_view make_view(const T& str)
   {
-    return { str.data(), str.size() };
+    return str;
   }
 };
 
@@ -76,15 +69,15 @@ template<>
 struct string_traits<const char*>
 {
   [[nodiscard]]
-  static const char* make(const char* str, [[maybe_unused]] duk_size_t size)
+  static const char* make_string(const char* str, [[maybe_unused]] duk_size_t size)
   {
     return str;
   }
 
   [[nodiscard]]
-  static string_info info(const char* str)
+  static std::string_view make_view(const char* str)
   {
-    return { str, std::strlen(str) };
+    return str;
   }
 };
 
