@@ -7,6 +7,7 @@
 #include <duk/string_traits.h>
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
+#include <typeindex>
 #include <type_traits>
 
 
@@ -22,14 +23,99 @@ template<typename Func, typename ArgIdx>
 struct FunctionWrapper;
 
 
+struct ObjectInfo
+{
+  ObjectInfo(const std::type_index& typeId) noexcept :
+    typeId(typeId)
+  {
+  }
+
+  std::type_index typeId;
+};
+
+
+template<typename T>
+struct ObjectInfoImpl : public ObjectInfo
+{
+  ObjectInfoImpl(auto&& obj) :
+    ObjectInfo(typeid(T)),
+    obj(std::forward<T>(obj))
+  {
+  }
+
+  T obj;
+};
+
+
 } // namespace detail
 
 
 template<typename T>
-struct type_traits;
+struct type_traits
+{
+  // TODO: Use index property instead of named property?
+  static constexpr auto objInfoName = DUKCPP_DETAIL_INTERNAL_NAME("objInfo");
+
+  using DecayT = std::decay_t<T>;
+  using ObjectInfoImpl = detail::ObjectInfoImpl<DecayT>;
+
+  static void push(duk_context* ctx, auto&& obj)
+  {
+    static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
+    {
+      duk_get_prop_string(ctx, 0, objInfoName);
+      auto objInfo = static_cast<ObjectInfoImpl*>(duk_get_pointer(ctx, -1));
+      duk_pop(ctx);
+
+      free(ctx, objInfo);
+
+      return 0;
+    };
+
+    auto* objInfo = make<ObjectInfoImpl>(ctx, std::forward<DecayT>(obj));
+
+    duk_push_object(ctx);
+
+    duk_push_pointer(ctx, objInfo);
+    duk_put_prop_string(ctx, -2, objInfoName);
+
+    duk_push_c_function(ctx, finalizer, 2);
+    duk_set_finalizer(ctx, -2);
+  }
+
+  [[nodiscard]]
+  static auto pull(duk_context* ctx, duk_idx_t idx)
+  {
+    // TODO:
+    // Accessing property here isn't ideal since, in most cases, it's already been done in check_type().
+    // I am not sure how bad it is for the peformance, but could be significant. Consider optimizing it somehow.
+    duk_get_prop_string(ctx, idx, objInfoName);
+    auto objInfo = static_cast<ObjectInfoImpl*>(duk_get_pointer(ctx, -1));
+    duk_pop(ctx);
+
+    return objInfo->obj;
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  {
+    if (!duk_is_object(ctx, idx))
+      return false;
+
+    if (!duk_get_prop_string(ctx, idx, objInfoName))
+    {
+      duk_pop(ctx);
+      return false;
+    }
+    auto objInfo = static_cast<detail::ObjectInfo*>(duk_get_pointer(ctx, -1));
+    duk_pop(ctx);
+
+    return objInfo->typeId == typeid(DecayT);
+  }
+};
 
 
-// Treats references as values.
+// TODO: Treats references as values. It's easy and safe, but will result in unnecessary copies.
 template<typename T> requires std::is_reference_v<T>
 struct type_traits<T>
 {
@@ -54,6 +140,9 @@ struct type_traits<T>
 };
 
 
+// TODO:
+// This specialization treats all functor objects as functions. What about the cases when we don't want that?
+// Maybe it would be better to specialize on duk::function<>?
 template<callable func_t>
 struct type_traits<func_t>
 {
@@ -90,7 +179,7 @@ struct type_traits<func_t>
       return 0;
     };
 
-    auto funcPtr = make<DecayFunc>(ctx, std::forward<func_t>(func));
+    auto* funcPtr = make<DecayFunc>(ctx, std::forward<func_t>(func));
 
     duk_push_c_function(ctx, wrapper, DUK_VARARGS);
 

@@ -184,3 +184,37 @@ TEST_CASE_METHOD(DukCppTest, "Push and pull const char*")
   duk::push<const char*>(ctx_, "test string");
   REQUIRE(std::strcmp(duk::pull<const char*>(ctx_, -1), "test string") == 0);
 }
+
+
+// TODO: Temporary test. Replace it with something better.
+TEST_CASE_METHOD(DukCppTest, "Generic object support")
+{
+  struct A
+  {
+    std::string m = "hello";
+  };
+
+  struct B
+  {
+    std::string m = "world";
+  };
+
+  auto f = [](const A& a, const B& b)
+  {
+    return a.m + b.m;
+  };
+
+  // valid arguments
+  duk::push_function<f>(ctx_);
+  duk::push(ctx_, A{});
+  duk::push(ctx_, B{});
+  duk_call(ctx_, 2);
+  REQUIRE(duk::pull<std::string>(ctx_, -1) == "helloworld");
+  duk_pop(ctx_);
+
+  // invalid argument
+  duk::push_function<f>(ctx_);
+  duk::push(ctx_, A{});
+  duk::push(ctx_, 1);
+  REQUIRE_THROWS(duk_call(ctx_, 2));
+}
