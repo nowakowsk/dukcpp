@@ -84,7 +84,7 @@ struct type_traits
   }
 
   [[nodiscard]]
-  static auto pull(duk_context* ctx, duk_idx_t idx)
+  static decltype(auto) pull(duk_context* ctx, duk_idx_t idx)
   {
     // TODO:
     // Accessing property here isn't ideal since, in most cases, it's already been done in check_type().
@@ -140,12 +140,11 @@ struct type_traits<T>
 };
 
 
-// TODO:
-// This specialization treats all functor objects as functions. What about the cases when we don't want that?
-// Maybe it would be better to specialize on duk::function<>?
-template<callable func_t>
-struct type_traits<func_t>
+template<callable T>
+struct type_traits<T>
 {
+  using func_t = typename callable_traits<T>::type;
+
   static void push(duk_context* ctx, auto&& func)
   {
     using DecayFunc = std::decay_t<func_t>;

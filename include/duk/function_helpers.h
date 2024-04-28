@@ -32,7 +32,7 @@ void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
 template<typename func_t>
 void push_function(duk_context* ctx, func_t&& func)
 {
-  push(ctx, std::forward<func_t>(func));
+  type_traits<as_function<func_t>>::push(ctx, std::forward<func_t>(func));
 }
 
 

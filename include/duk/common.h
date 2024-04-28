@@ -16,16 +16,9 @@ namespace duk
 
 
 template<typename T>
-concept integer = std::is_integral_v<T> && !std::is_same_v<T, bool>;
-
-
-template<typename T>
-concept callable =
-  !std::is_reference_v<T> &&
-  requires(T)
-  {
-    typename boost::callable_traits::function_type_t<T>;
-  };
+concept integer = 
+  std::is_integral_v<T> &&
+  !std::is_same_v<std::remove_cv_t<T>, bool>;
 
 
 template<typename T>

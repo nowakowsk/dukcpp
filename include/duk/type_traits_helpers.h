@@ -30,9 +30,10 @@ decltype(auto) pull(duk_context* ctx, duk_idx_t idx)
 }
 
 
+// Checks type before pulling. Throws error if check fails.
 template<typename T>
 [[nodiscard]]
-decltype(auto) check_type_and_pull(duk_context* ctx, duk_idx_t idx)
+decltype(auto) safe_pull(duk_context* ctx, duk_idx_t idx)
 {
   if (!type_traits<T>::check_type(ctx, idx))
     throw error(ctx, "unexpected type");

@@ -1,9 +1,23 @@
 #include "lifetime.h"
 #include <duk/duk.h>
+#include <duk/callable_std_function.h>
 #include <catch2/catch_test_macros.hpp>
 #include <cstring>
 #include <stdexcept>
 #include <string>
+
+
+#define DUKCPP_TEST_CASE_METHOD(className, ...) \
+  TEST_CASE_METHOD(className, \
+    try \
+    { \
+      __VA_ARGS__ \
+    } \
+    catch (duk::error& e) \
+    { \
+      throw std::runtime_error(e.what()); \
+    } \
+  )
 
 
 struct DukCppTest
@@ -100,7 +114,7 @@ TEST_CASE_METHOD(DukCppTest, "Register lambda with capture list")
 TEST_CASE_METHOD(DukCppTest, "Call ES function in C++ (non-null return value)")
 {
   duk_eval_string(ctx_, "function f(a, b) { return a * b; }; (f);");
-  auto f = duk::pull<std::function<int(int, int)>>(ctx_, -1);
+  auto f = duk::safe_pull<std::function<int(int, int)>>(ctx_, -1);
   auto result = f(2, 3);
   REQUIRE(result == 6);
 }
@@ -109,7 +123,7 @@ TEST_CASE_METHOD(DukCppTest, "Call ES function in C++ (non-null return value)")
 TEST_CASE_METHOD(DukCppTest, "Call ES function in C++ (null return value)")
 {
   duk_eval_string(ctx_, "function f() {}; (f);");
-  auto f = duk::pull<std::function<void()>>(ctx_, -1);
+  auto f = duk::safe_pull<std::function<void()>>(ctx_, -1);
   f();
 }
 
@@ -212,9 +226,10 @@ TEST_CASE_METHOD(DukCppTest, "Generic object support")
   REQUIRE(duk::pull<std::string>(ctx_, -1) == "helloworld");
   duk_pop(ctx_);
 
-  // invalid argument
+  // invalid arguments
   duk::push_function<f>(ctx_);
   duk::push(ctx_, A{});
   duk::push(ctx_, 1);
   REQUIRE_THROWS(duk_call(ctx_, 2));
+  duk_pop(ctx_);
 }

@@ -13,7 +13,7 @@ namespace duk
 
 
 // Non-owning handle to Duktape function.
-template<callable T>
+template<typename T>
 class function
 {
 public:
@@ -32,11 +32,18 @@ public:
 
     scoped_pop _(handle_.ctx); // Pop return value.
 
-    return check_type_and_pull<Result>(handle_.ctx, -1);
+    return safe_pull<Result>(handle_.ctx, -1);
   }
 
 private:
   handle handle_;
+};
+
+
+template<typename T>
+struct callable_traits<function<T>>
+{
+  using type = T;
 };
 
 
