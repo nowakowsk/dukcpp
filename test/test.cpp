@@ -7,19 +7,6 @@
 #include <string>
 
 
-#define DUKCPP_TEST_CASE_METHOD(className, ...) \
-  TEST_CASE_METHOD(className, \
-    try \
-    { \
-      __VA_ARGS__ \
-    } \
-    catch (duk::error& e) \
-    { \
-      throw std::runtime_error(e.what()); \
-    } \
-  )
-
-
 struct DukCppTest
 {
   using Allocator = duk::allocator_adapter<>;
