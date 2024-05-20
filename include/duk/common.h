@@ -17,8 +17,18 @@ namespace duk
 
 template<typename T>
 concept integer = 
-  std::is_integral_v<T> &&
-  !std::is_same_v<std::remove_cv_t<T>, bool>;
+  std::is_integral_v<std::decay_t<T>> &&
+  !std::is_same_v<std::decay_t<T>, bool>;
+
+
+template<typename T>
+concept floating_point = 
+  std::is_floating_point_v<std::decay_t<T>>;
+
+
+template<typename T>
+concept boolean = 
+  std::is_same_v<std::decay_t<T>, bool>;
 
 
 template<typename T>

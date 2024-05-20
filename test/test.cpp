@@ -1,3 +1,4 @@
+#include "common.h"
 #include "lifetime.h"
 #include <duk/duk.h>
 #include <duk/callable_std_function.h>
@@ -26,39 +27,252 @@ struct DukCppTest
 };
 
 
+template<typename T>
+[[nodiscard]]
+bool equals(const T& a, const T& b, const T& e)
+{
+  return std::abs(a - b) <= e;
+}
+
+
 TEST_CASE_METHOD(DukCppTest, "Register function (value arguments)")
 {
-  static constexpr auto addFunc = [](int a, int b)
+  static constexpr auto add = [](int a, int b) -> int
   {
     return a + b;
   };
 
   duk_push_global_object(ctx_);
-  duk::put_function<addFunc>(ctx_, -1, "addFunc");
+  duk::put_function<add>(ctx_, -1, "add");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "addFunc(1, 2)");
+  duk_eval_string(ctx_, "add(1, 2)");
   REQUIRE(duk::pull<int>(ctx_, -1) == 3);
 }
 
 
 TEST_CASE_METHOD(DukCppTest, "Register function (reference arguments)")
 {
-  static constexpr auto addFunc = [](const int& a, const int& b)
+  static constexpr auto add = [](const int& a, const int& b)
   {
     return a + b;
   };
 
   duk_push_global_object(ctx_);
-  duk::put_function<addFunc>(ctx_, -1, "addFunc");
+  duk::put_function<add>(ctx_, -1, "add");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "addFunc(1, 2)");
+  duk_eval_string(ctx_, "add(1, 2)");
   REQUIRE(duk::pull<int>(ctx_, -1) == 3);
 }
 
 
-TEST_CASE_METHOD(DukCppTest, "Register functor")
+TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: int")
+{
+  duk_push_global_object(ctx_);
+  duk::put_function<identity<int, int>>(ctx_, -1, "int_int");
+  duk::put_function<identity<int, const int&>>(ctx_, -1, "int_crefint");
+  duk::put_function<identity<const int&, const int&>>(ctx_, -1, "crefint_crefint");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "int_int(-5)");
+  REQUIRE(duk::pull<int>(ctx_, -1) == -5);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "int_crefint(-5)");
+  REQUIRE(duk::pull<int>(ctx_, -1) == -5);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "crefint_crefint(-5)");
+  REQUIRE(duk::pull<const int&>(ctx_, -1) == -5);
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: unsigned int")
+{
+  duk_push_global_object(ctx_);
+  duk::put_function<identity<unsigned int, unsigned int>>(ctx_, -1, "uint_uint");
+  duk::put_function<identity<unsigned int, const unsigned int&>>(ctx_, -1, "uint_crefuint");
+  duk::put_function<identity<const unsigned int&, const unsigned int&>>(ctx_, -1, "crefuint_crefuint");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "uint_uint(5)");
+  REQUIRE(duk::pull<unsigned int>(ctx_, -1) == 5);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "uint_crefuint(5)");
+  REQUIRE(duk::pull<unsigned int>(ctx_, -1) == 5);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "crefuint_crefuint(5)");
+  REQUIRE(duk::pull<const unsigned int&>(ctx_, -1) == 5);
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: bool")
+{
+  duk_push_global_object(ctx_);
+  duk::put_function<identity<bool, bool>>(ctx_, -1, "bool_bool");
+  duk::put_function<identity<bool, const bool&>>(ctx_, -1, "bool_crefbool");
+  duk::put_function<identity<const bool&, const bool&>>(ctx_, -1, "crefbool_crefbool");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "bool_bool(true)");
+  REQUIRE(duk::pull<bool>(ctx_, -1) == true);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "bool_crefbool(true)");
+  REQUIRE(duk::pull<bool>(ctx_, -1) == true);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "crefbool_crefbool(true)");
+  REQUIRE(duk::pull<const bool&>(ctx_, -1) == true);
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: float")
+{
+  duk_push_global_object(ctx_);
+  duk::put_function<identity<float, float>>(ctx_, -1, "float_float");
+  duk::put_function<identity<float, const float&>>(ctx_, -1, "float_creffloat");
+  duk::put_function<identity<const float&, const float&>>(ctx_, -1, "creffloat_creffloat");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "float_float(1)");
+  REQUIRE(equals(duk::pull<float>(ctx_, -1), 1.0f, 1e-5f));
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "float_creffloat(1)");
+  REQUIRE(equals(duk::pull<float>(ctx_, -1), 1.0f, 1e-5f));
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "creffloat_creffloat(1)");
+  REQUIRE(equals(duk::pull<const float&>(ctx_, -1), 1.0f, 1e-5f));
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std::string")
+{
+  duk_push_global_object(ctx_);
+  duk::put_function<identity<std::string, std::string>>(ctx_, -1, "string_string");
+  duk::put_function<identity<std::string, const std::string&>>(ctx_, -1, "string_crefstring");
+  duk::put_function<identity<const std::string&, const std::string&>>(ctx_, -1, "crefstring_crefstring");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "string_string('test')");
+  REQUIRE(duk::pull<std::string>(ctx_, -1) == "test");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "string_crefstring('test')");
+  REQUIRE(duk::pull<std::string>(ctx_, -1) == "test");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "crefstring_crefstring('test')");
+  REQUIRE(duk::pull<const std::string&>(ctx_, -1) == "test");
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std::string_view")
+{
+  duk_push_global_object(ctx_);
+  duk::put_function<identity<std::string_view, std::string_view>>(ctx_, -1, "string_string");
+  duk::put_function<identity<std::string_view, const std::string_view&>>(ctx_, -1, "string_crefstring");
+  duk::put_function<identity<const std::string_view&, const std::string_view&>>(ctx_, -1, "crefstring_crefstring");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "(string_string('test'))");
+  // Needed because of some stringification issues in Catch2? Not sure what is going on here.
+  // TODO: Solution: rebuild Catch2 with at least C++17 (cmake -DCMAKE_CXX_STANDARD=17)
+  auto result = (duk::pull<std::string_view>(ctx_, -1) == "test");
+  REQUIRE(result);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "(string_crefstring('test'))");
+  result = (duk::pull<std::string_view>(ctx_, -1) == "test");
+  REQUIRE(result);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "(crefstring_crefstring('test'))");
+  result = (duk::pull<std::string_view>(ctx_, -1) == "test");
+  REQUIRE(result);
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: const char*")
+{
+  duk_push_global_object(ctx_);
+  duk::put_function<identity<const char*, const char*>>(ctx_, -1, "constchar_constchar");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "constchar_constchar('test')");
+  REQUIRE(std::strcmp(duk::pull<const char*>(ctx_, -1), "test") == 0);
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Register overloaded function (value arguments)")
+{
+  // TODO: This shouldn't be needed, but doing those casts directly in duk::put_function call fails to compile under
+  // MSVC. Bug report: https://developercommunity.visualstudio.com/t/Code-compiles-in-GCC-and-Clang-but-fail/10673264
+  static constexpr auto add1 = static_cast<int(*)(int, int)>(add);
+  static constexpr auto add2 = static_cast<std::string(*)(std::string_view, std::string_view)>(add);
+
+  duk_push_global_object(ctx_);
+  duk::put_function<add1, add2>(ctx_, -1, "add");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "add(1, 2)");
+  REQUIRE(duk::pull<int>(ctx_, -1) == 3);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "add('a', 'b')");
+  REQUIRE(duk::pull<std::string>(ctx_, -1) == "ab");
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Register constexpr functor")
+{
+  struct Functor
+  {
+    constexpr Functor()
+    {
+    }
+
+    bool operator()() const
+    {
+      return true;
+    }
+
+    int operator()(int x) const
+    {
+      return x;
+    }
+  };
+
+  duk_push_global_object(ctx_);
+  duk::put_function<
+    duk::function_descriptor<Functor{}, bool(), int(int)>
+  >(ctx_, -1, "func");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "func()");
+  REQUIRE(duk::pull<bool>(ctx_, -1) == true);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "func(10)");
+  REQUIRE(duk::pull<int>(ctx_, -1) == 10);
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Check object copy counts")
 {
   Lifetime::Observer observer;
 
@@ -175,8 +389,10 @@ TEST_CASE_METHOD(DukCppTest, "Push and pull std::string")
 TEST_CASE_METHOD(DukCppTest, "Push and pull std::string_view")
 {
   duk::push<std::string_view>(ctx_, "test string");
+  // Needed because of some stringification issues in Catch2? Not sure what is going on here.
+  // TODO: Solution: rebuild Catch2 with at least C++17 (cmake -DCMAKE_CXX_STANDARD=17)
   auto result = (duk::pull<std::string_view>(ctx_, -1) == "test string");
-  REQUIRE(result); // Needed because of some stringification issues in Catch2. Not sure what is going on here.
+  REQUIRE(result);
 }
 
 
@@ -184,6 +400,51 @@ TEST_CASE_METHOD(DukCppTest, "Push and pull const char*")
 {
   duk::push<const char*>(ctx_, "test string");
   REQUIRE(std::strcmp(duk::pull<const char*>(ctx_, -1), "test string") == 0);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Class binding")
+{
+  duk_push_global_object(ctx_);
+
+  duk::push_function<
+    duk::ctor<Vector>,
+    duk::ctor<Vector, int, int>
+  >(ctx_);
+
+  duk_push_object(ctx_);
+
+  duk::put_function<
+    static_cast<void(Vector::*)(float)>(&Vector::add),
+    static_cast<void(Vector::*)(const Vector&)>(&Vector::add)
+  >(ctx_, -1, "add");
+
+  duk::put_function<
+    &Vector::length
+  >(ctx_, -1, "length");
+
+  duk_put_prop_string(ctx_, -2, "prototype");
+
+  duk_put_prop_string(ctx_, -2, "Vector");
+
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    var v = new Vector(1, 2);
+    v.add(2);
+    v.length();
+  )__");
+
+  REQUIRE(equals(duk::pull<double>(ctx_, -1), 5.0, 1e-5));
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    v.add(new Vector(2, 8));
+    v.length();
+  )__");
+
+  REQUIRE(equals(duk::pull<double>(ctx_, -1), 13.0, 1e-5));
+  duk_pop(ctx_);
 }
 
 
@@ -205,7 +466,7 @@ TEST_CASE_METHOD(DukCppTest, "Generic object support")
     return a.m + b.m;
   };
 
-  // valid arguments
+  // Valid arguments
   duk::push_function<f>(ctx_);
   duk::push(ctx_, A{});
   duk::push(ctx_, B{});
@@ -213,7 +474,7 @@ TEST_CASE_METHOD(DukCppTest, "Generic object support")
   REQUIRE(duk::pull<std::string>(ctx_, -1) == "helloworld");
   duk_pop(ctx_);
 
-  // invalid arguments
+  // Invalid arguments
   duk::push_function<f>(ctx_);
   duk::push(ctx_, A{});
   duk::push(ctx_, 1);

@@ -19,7 +19,7 @@ namespace detail
 {
 
 
-template<typename Func, typename ArgIdx>
+template<typename Signature, typename ArgIdx>
 struct FunctionWrapper;
 
 
@@ -39,7 +39,7 @@ struct ObjectInfoImpl : public ObjectInfo
 {
   ObjectInfoImpl(auto&& obj) :
     ObjectInfo(typeid(T)),
-    obj(std::forward<T>(obj))
+    obj(std::forward<decltype(obj)>(obj))
   {
   }
 
@@ -54,6 +54,7 @@ template<typename T>
 struct type_traits
 {
   // TODO: Use index property instead of named property?
+  // TODO: Make it shared across all T types by moving it out of this struct template.
   static constexpr auto objInfoName = DUKCPP_DETAIL_INTERNAL_NAME("objInfo");
 
   using DecayT = std::decay_t<T>;
@@ -72,9 +73,12 @@ struct type_traits
       return 0;
     };
 
-    auto* objInfo = make<ObjectInfoImpl>(ctx, std::forward<DecayT>(obj));
+    auto* objInfo = make<ObjectInfoImpl>(ctx, std::forward<decltype(obj)>(obj));
 
-    duk_push_object(ctx);
+    if (duk_is_constructor_call(ctx))
+      duk_push_this(ctx);
+    else
+      duk_push_object(ctx);
 
     duk_push_pointer(ctx, objInfo);
     duk_put_prop_string(ctx, -2, objInfoName);
@@ -84,7 +88,7 @@ struct type_traits
   }
 
   [[nodiscard]]
-  static decltype(auto) pull(duk_context* ctx, duk_idx_t idx)
+  static T pull(duk_context* ctx, duk_idx_t idx)
   {
     // TODO:
     // Accessing property here isn't ideal since, in most cases, it's already been done in check_type().
@@ -115,42 +119,22 @@ struct type_traits
 };
 
 
-// TODO: Treats references as values. It's easy and should be safe, but will result in unnecessary copies.
-template<typename T> requires std::is_reference_v<T>
-struct type_traits<T>
-{
-  using DecayT = std::decay_t<T>;
-
-  static void push(duk_context* ctx, auto&& value)
-  {
-    type_traits<DecayT>::push(ctx, value);
-  }
-
-  [[nodiscard]]
-  static auto pull(duk_context* ctx, duk_idx_t idx)
-  {
-    return type_traits<DecayT>::pull(ctx, idx);
-  }
-
-  [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
-  {
-    return type_traits<DecayT>::check_type(ctx, idx);
-  }
-};
-
-
 template<callable T>
 struct type_traits<T>
 {
-  using func_t = typename callable_traits<T>::type;
+  using func_t = callable_traits<T>::type;
 
+  template<typename ...Signature>
   static void push(duk_context* ctx, auto&& func)
   {
-    using DecayFunc = std::decay_t<func_t>;
-    using ArgsTuple = boost::callable_traits::args_t<func_t>;
+    // If signature is not specified explicitly, try to deduce it based on func_t.
+    if constexpr (sizeof...(Signature) == 0)
+    {
+      push<boost::callable_traits::function_type_t<func_t>>(ctx, std::forward<decltype(func)>(func));
+      return;
+    }
 
-    static constexpr auto argCount = std::tuple_size_v<ArgsTuple>;
+    using DecayFunc = std::decay_t<func_t>;
 
     // TODO: Use index property instead of named property?
     static constexpr auto funcPropName = DUKCPP_DETAIL_INTERNAL_NAME("func");
@@ -162,9 +146,21 @@ struct type_traits<T>
       auto funcPtr = static_cast<DecayFunc*>(duk_get_pointer(ctx, -1));
       duk_pop_2(ctx);
 
-      auto result = detail::FunctionWrapper<func_t, std::make_index_sequence<argCount>>::run(ctx, *funcPtr);
-      if (result < 0)
+      duk_ret_t result;
+      if ((((result =
+        [&]()
+        {
+          using ArgsTuple = boost::callable_traits::args_t<Signature>;
+
+          static constexpr auto argCount = std::tuple_size_v<ArgsTuple>;
+
+          return detail::FunctionWrapper<
+            Signature, std::make_index_sequence<argCount>
+          >::run(ctx, *funcPtr);
+        }()) < 0) && ...))
+      {
         return duk_error(ctx, DUK_ERR_TYPE_ERROR, "no matching function found");
+      }
 
       return result;
     };
@@ -207,7 +203,7 @@ struct type_traits<T>
 };
 
 
-template<integer T> requires std::is_signed_v<T>
+template<integer T> requires std::is_signed_v<std::decay_t<T>>
 struct type_traits<T>
 {
   static void push(duk_context* ctx, T value)
@@ -216,7 +212,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static T pull(duk_context* ctx, duk_idx_t idx)
+  static std::decay_t<T> pull(duk_context* ctx, duk_idx_t idx)
   {
     return duk_get_int(ctx, idx);
   }
@@ -229,7 +225,7 @@ struct type_traits<T>
 };
 
 
-template<integer T> requires std::is_unsigned_v<T>
+template<integer T> requires std::is_unsigned_v<std::decay_t<T>>
 struct type_traits<T>
 {
   static void push(duk_context* ctx, T value)
@@ -238,7 +234,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static T pull(duk_context* ctx, duk_idx_t idx)
+  static std::decay_t<T> pull(duk_context* ctx, duk_idx_t idx)
   {
     return duk_get_uint(ctx, idx);
   }
@@ -251,7 +247,7 @@ struct type_traits<T>
 };
 
 
-template<std::floating_point T>
+template<floating_point T>
 struct type_traits<T>
 {
   static void push(duk_context* ctx, T value)
@@ -260,7 +256,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static T pull(duk_context* ctx, duk_idx_t idx)
+  static std::decay_t<T> pull(duk_context* ctx, duk_idx_t idx)
   {
     return duk_get_number(ctx, idx);
   }
@@ -273,10 +269,10 @@ struct type_traits<T>
 };
 
 
-template<>
-struct type_traits<bool>
+template<boolean T>
+struct type_traits<T>
 {
-  static void push(duk_context* ctx, bool value)
+  static void push(duk_context* ctx, T value)
   {
     duk_push_boolean(ctx, value);
   }
@@ -298,20 +294,22 @@ struct type_traits<bool>
 template<string_type T>
 struct type_traits<T>
 {
-  static void push(duk_context* ctx, const T& value)
+  using DecayT = std::decay_t<T>;
+
+  static void push(duk_context* ctx, auto&& value)
   {
-    auto str = string_traits<T>::make_view(value);
+    auto str = string_traits<DecayT>::make_view(std::forward<decltype(value)>(value));
 
     duk_push_lstring(ctx, str.data(), str.size());
   }
 
   [[nodiscard]]
-  static T pull(duk_context* ctx, duk_idx_t idx)
+  static DecayT pull(duk_context* ctx, duk_idx_t idx)
   {
     duk_size_t size;
     auto string = duk_get_lstring(ctx, idx, &size);
 
-    return string_traits<T>::make_string(string, size);
+    return string_traits<DecayT>::make_string(string, size);
   }
 
   [[nodiscard]]
@@ -331,6 +329,7 @@ struct type_traits<void>
 
   static void pull(duk_context* ctx, duk_idx_t idx)
   {
+    // no-op
   }
 
   [[nodiscard]]

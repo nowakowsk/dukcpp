@@ -2,7 +2,6 @@
 #define DUKCPP_STRING_TRAITS_H
 
 #include <duktape.h>
-#include <cstring>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -19,8 +18,8 @@ struct string_traits;
 template<typename T>
 concept string_type = requires(T str, const char* char_str, duk_size_t size)
 {
-  { string_traits<T>::make_string(char_str, size) } -> std::same_as<T>;
-  { string_traits<T>::make_view(str) } -> std::same_as<std::string_view>;
+  { string_traits<std::decay_t<T>>::make_string(char_str, size) } -> std::same_as<std::decay_t<T>>;
+  { string_traits<std::decay_t<T>>::make_view(str) } -> std::same_as<std::string_view>;
 };
 
 

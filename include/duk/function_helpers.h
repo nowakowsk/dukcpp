@@ -12,12 +12,27 @@ namespace duk
 {
 
 
+template<typename ...FuncDesc>
+duk_idx_t push_function(duk_context* ctx)
+{
+  static constexpr auto funcWrapper = detail::overloadedFunctionWrapper<FuncDesc...>;
+
+  return duk_push_c_function(ctx, funcWrapper, DUK_VARARGS);
+}
+
+
 template<auto ...funcs>
 duk_idx_t push_function(duk_context* ctx)
 {
-  static constexpr auto funcWrapper = detail::overloadedFunctionWrapper<funcs...>;
+  return push_function<function_descriptor<funcs, decltype(funcs)>...>(ctx);
+}
 
-  return duk_push_c_function(ctx, funcWrapper, DUK_VARARGS);
+
+template<typename ...FuncDesc>
+void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
+{
+  push_function<FuncDesc...>(ctx);
+  duk_put_prop_lstring(ctx, idx - 1, name.data(), name.length());
 }
 
 

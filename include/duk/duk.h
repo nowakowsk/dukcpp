@@ -4,6 +4,7 @@
 #include <duk/allocator.h>
 #include <duk/allocator_adapter.h>
 #include <duk/callable.h>
+#include <duk/class.h>
 #include <duk/common.h>
 #include <duk/context.h>
 #include <duk/detail/memory_resource.h>
