@@ -186,20 +186,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std:
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "(string_string('test'))");
-  // Needed because of some stringification issues in Catch2? Not sure what is going on here.
-  // TODO: Solution: rebuild Catch2 with at least C++17 (cmake -DCMAKE_CXX_STANDARD=17)
-  auto result = (duk::pull<std::string_view>(ctx_, -1) == "test");
-  REQUIRE(result);
+  REQUIRE(duk::pull<std::string_view>(ctx_, -1) == "test");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "(string_crefstring('test'))");
-  result = (duk::pull<std::string_view>(ctx_, -1) == "test");
-  REQUIRE(result);
+  REQUIRE(duk::pull<std::string_view>(ctx_, -1) == "test");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "(crefstring_crefstring('test'))");
-  result = (duk::pull<std::string_view>(ctx_, -1) == "test");
-  REQUIRE(result);
+  REQUIRE(duk::pull<std::string_view>(ctx_, -1) == "test");
   duk_pop(ctx_);
 }
 
@@ -389,10 +384,7 @@ TEST_CASE_METHOD(DukCppTest, "Push and pull std::string")
 TEST_CASE_METHOD(DukCppTest, "Push and pull std::string_view")
 {
   duk::push<std::string_view>(ctx_, "test string");
-  // Needed because of some stringification issues in Catch2? Not sure what is going on here.
-  // TODO: Solution: rebuild Catch2 with at least C++17 (cmake -DCMAKE_CXX_STANDARD=17)
-  auto result = (duk::pull<std::string_view>(ctx_, -1) == "test string");
-  REQUIRE(result);
+  REQUIRE(duk::pull<std::string_view>(ctx_, -1) == "test string");
 }
 
 

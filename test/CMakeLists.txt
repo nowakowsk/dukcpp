@@ -19,6 +19,11 @@ target_link_libraries(dukcpp-test
     dukcpp
 )
 
+target_compile_features(dukcpp-test
+  PUBLIC
+    cxx_std_20
+)
+
 if(MSVC)
   set_target_properties(dukcpp-test
     PROPERTIES

@@ -74,5 +74,4 @@ target_compile_features(${MODULE_NAME}
 # tests
 
 add_subdirectory(test)
-add_subdirectory(test2)
 add_subdirectory(duk)
