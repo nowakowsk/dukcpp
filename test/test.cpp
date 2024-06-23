@@ -376,21 +376,21 @@ TEST_CASE_METHOD(DukCppTest, "Safe handle (function)")
 
 TEST_CASE_METHOD(DukCppTest, "Push and pull std::string")
 {
-  duk::push<std::string>(ctx_, "test string");
+  duk::push(ctx_, std::string("test string"));
   REQUIRE(duk::pull<std::string>(ctx_, -1) == "test string");
 }
 
 
 TEST_CASE_METHOD(DukCppTest, "Push and pull std::string_view")
 {
-  duk::push<std::string_view>(ctx_, "test string");
+  duk::push(ctx_, std::string_view("test string"));
   REQUIRE(duk::pull<std::string_view>(ctx_, -1) == "test string");
 }
 
 
 TEST_CASE_METHOD(DukCppTest, "Push and pull const char*")
 {
-  duk::push<const char*>(ctx_, "test string");
+  duk::push(ctx_, "test string");
   REQUIRE(std::strcmp(duk::pull<const char*>(ctx_, -1), "test string") == 0);
 }
 
@@ -399,49 +399,44 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
 {
   duk_push_global_object(ctx_);
 
-  duk::push_function<
-    duk::ctor<Vector>,
-    duk::ctor<Vector, int, int>
-  >(ctx_);
+  auto prototypeHandle = registerVector(ctx_, -1);
 
-  duk_push_object(ctx_);
+  // Primitive constructor function
+  duk::push_function<duk::ctor<Vector>>(ctx_);
+  duk_put_prop_string(ctx_, -2, "makeVector");
 
-  duk::put_function<
-    static_cast<void(Vector::*)(float)>(&Vector::add),
-    static_cast<void(Vector::*)(const Vector&)>(&Vector::add)
-  >(ctx_, -1, "add");
+  duk::push(ctx_, Vector{}, prototypeHandle);
+  duk_put_prop_string(ctx_, -2, "v2");
 
-  duk::put_function<
-    &Vector::length
-  >(ctx_, -1, "length");
-
-  duk_put_prop_string(ctx_, -2, "prototype");
-
-  duk_put_prop_string(ctx_, -2, "Vector");
-
-  duk_pop(ctx_);
+  duk_pop(ctx_); // Pop global object
 
   duk_eval_string(ctx_, R"__(
-    var v = new Vector(1, 2);
-    v.add(2);
-    v.length();
+    var v1 = new Vector(1, 2);
+    v1.add(2);
+    v1.length();
   )__");
-
   REQUIRE(equals(duk::pull<double>(ctx_, -1), 5.0, 1e-5));
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, R"__(
-    v.add(new Vector(2, 8));
-    v.length();
+    v1.add(new Vector(2, 8));
+    v1.length();
   )__");
-
   REQUIRE(equals(duk::pull<double>(ctx_, -1), 13.0, 1e-5));
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    v3 = makeVector();
+    v3.length();
+    v1.add(v3);
+    v1 instanceof Vector && v2 instanceof Vector && v3 instanceof Vector
+  )__");
+  REQUIRE(duk::pull<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 }
 
 
-// TODO: Temporary test. Replace it with something better.
-TEST_CASE_METHOD(DukCppTest, "Generic object support")
+TEST_CASE_METHOD(DukCppTest, "Generic object binding")
 {
   struct A
   {

@@ -1,6 +1,7 @@
 #ifndef DUKCPP_TEST_COMMON_H
 #define DUKCPP_TEST_COMMON_H
 
+#include <duk/class.h>
 #include <string>
 #include <string_view>
 
@@ -15,12 +16,31 @@ struct Vector
 
   float length() const;
 
-  void add(float x);
+  void add(float v);
   void add(const Vector& v);
 
-  float x;
-  float y;
+  float x = 0;
+  float y = 0;
 };
+
+
+namespace duk
+{
+
+template<>
+struct class_traits<Vector>
+{
+  static void* prototype_heapptr(duk_context* ctx);
+
+  static void* prototype;
+};
+
+
+} // namespace duk
+
+
+// Returns prototype object handle
+void* registerVector(duk_context* ctx, duk_idx_t idx);
 
 
 template<typename R, typename T>

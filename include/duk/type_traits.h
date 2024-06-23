@@ -1,6 +1,7 @@
 #ifndef DUKCPP_TYPE_TRAITS_H
 #define DUKCPP_TYPE_TRAITS_H
 
+#include <duk/class.h>
 #include <duk/common.h>
 #include <duk/error.h>
 #include <duk/function.h>
@@ -60,7 +61,7 @@ struct type_traits
   using DecayT = std::decay_t<T>;
   using ObjectInfoImpl = detail::ObjectInfoImpl<DecayT>;
 
-  static void push(duk_context* ctx, auto&& obj)
+  static void push(duk_context* ctx, auto&& obj, void* prototype_heapptr = nullptr)
   {
     static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
     {
@@ -85,6 +86,18 @@ struct type_traits
 
     duk_push_c_function(ctx, finalizer, 2);
     duk_set_finalizer(ctx, -2);
+
+    if constexpr (has_class_traits_prototype<DecayT>)
+    {
+      if (!prototype_heapptr)
+        prototype_heapptr = class_traits<DecayT>::prototype_heapptr(ctx);
+    }
+
+    if (prototype_heapptr)
+    {
+      duk_push_heapptr(ctx, prototype_heapptr);
+      duk_set_prototype(ctx, -2);
+    }
   }
 
   [[nodiscard]]

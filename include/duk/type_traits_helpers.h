@@ -16,9 +16,9 @@ struct type_traits;
 
 
 template<typename T>
-void push(duk_context* ctx, T&& value)
+void push(duk_context* ctx, T&& value, auto&&... args)
 {
-  type_traits<T>::push(ctx, std::forward<T>(value));
+  type_traits<T>::push(ctx, std::forward<T>(value), std::forward<decltype(args)>(args)...);
 }
 
 

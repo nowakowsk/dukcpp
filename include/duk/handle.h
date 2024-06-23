@@ -11,6 +11,8 @@ namespace duk
 // Non-owning handle to a Duktape heap object.
 struct handle final
 {
+  handle() noexcept = default;
+
   handle(duk_context* ctx, void* heap_ptr) noexcept :
     ctx(ctx),
     heap_ptr(heap_ptr)
@@ -57,8 +59,8 @@ struct handle final
     return !ctx || !heap_ptr;
   }
 
-  duk_context* ctx;
-  void* heap_ptr;
+  duk_context* ctx = nullptr;
+  void* heap_ptr = nullptr;
 };
 
 
