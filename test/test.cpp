@@ -1,5 +1,6 @@
 #include "common.h"
 #include "lifetime.h"
+#include "vector.h"
 #include <duk/duk.h>
 #include <duk/callable_std_function.h>
 #include <catch2/catch_test_macros.hpp>
@@ -25,14 +26,6 @@ struct DukCppTest
   Allocator allocator_;
   duk::context ctx_;
 };
-
-
-template<typename T>
-[[nodiscard]]
-bool equals(const T& a, const T& b, const T& e)
-{
-  return std::abs(a - b) <= e;
-}
 
 
 TEST_CASE_METHOD(DukCppTest, "Register function (value arguments)")
@@ -408,6 +401,10 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
   duk::push(ctx_, Vector{}, prototypeHandle);
   duk_put_prop_string(ctx_, -2, "v2");
 
+  static constexpr auto addOperator = [](const Vector& lhs, const Vector& rhs) { return lhs + rhs; };
+  duk::push_function<addOperator>(ctx_);
+  duk_put_prop_string(ctx_, -2, "addVector");
+
   duk_pop(ctx_); // Pop global object
 
   duk_eval_string(ctx_, R"__(
@@ -432,6 +429,12 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
     v1 instanceof Vector && v2 instanceof Vector && v3 instanceof Vector
   )__");
   REQUIRE(duk::pull<bool>(ctx_, -1) == true);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    addVector(new Vector(1, 1), new Vector(2, 3)).length()
+  )__");
+  REQUIRE(equals(duk::pull<float>(ctx_, -1), 5.0f, 1e-5f));
   duk_pop(ctx_);
 }
 

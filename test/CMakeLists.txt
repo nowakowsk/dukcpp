@@ -10,6 +10,7 @@ find_package(Catch2 REQUIRED)
 add_executable(dukcpp-test
   common.cpp
   test.cpp
+  vector.cpp
 )
 
 target_link_libraries(dukcpp-test
