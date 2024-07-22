@@ -13,11 +13,10 @@ struct callable_traits;
 
 
 template<typename T>
-concept callable =
-  requires(T)
-  {
-    typename callable_traits<T>::type;
-  };
+concept callable = requires
+{
+  typename callable_traits<T>::type;
+};
 
 
 template<typename T>

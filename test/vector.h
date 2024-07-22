@@ -12,6 +12,7 @@ struct Vector
   Vector(const Vector& other);
   Vector(Vector&& other);
 
+  [[nodiscard]]
   float length() const;
 
   void add(float v);
@@ -27,6 +28,7 @@ struct Vector
 namespace duk
 {
 
+
 template<>
 struct class_traits<Vector>
 {
@@ -34,6 +36,7 @@ struct class_traits<Vector>
 
   static void* prototype;
 };
+
 
 } // namespace duk
 

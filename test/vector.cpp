@@ -49,6 +49,7 @@ void Vector::add(const Vector& v)
 }
 
 
+[[nodiscard]]
 Vector operator+(const Vector& lhs, const Vector& rhs)
 {
   return { lhs.x + rhs.x, lhs.y + rhs.y };
@@ -94,6 +95,9 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
   duk_put_prop_string(ctx, -2, "prototype");
 
   duk_put_prop_string(ctx, idx - 1, "Vector");
+
+  static constexpr auto add = [](const Vector& lhs, const Vector& rhs) { return lhs + rhs; };
+  duk::put_function<add>(ctx, idx, "addVector");
 
   duk::class_traits<Vector>::prototype = prototypeHandle;
 

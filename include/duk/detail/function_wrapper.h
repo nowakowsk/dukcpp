@@ -89,7 +89,7 @@ struct FunctionWrapper<Signature, std::index_sequence<argIdx...>>
 
   static duk_ret_t run(duk_context* ctx, auto&& func)
   {
-    constexpr bool isMethodCall = requires { typename boost::callable_traits::class_of_t<Signature>; };
+    static constexpr bool isMethodCall = requires { typename boost::callable_traits::class_of_t<Signature>; };
 
     if constexpr (isMethodCall)
     {

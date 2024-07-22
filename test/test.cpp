@@ -401,9 +401,8 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
   duk::push(ctx_, Vector{}, prototypeHandle);
   duk_put_prop_string(ctx_, -2, "v2");
 
-  static constexpr auto addOperator = [](const Vector& lhs, const Vector& rhs) { return lhs + rhs; };
-  duk::push_function<addOperator>(ctx_);
-  duk_put_prop_string(ctx_, -2, "addVector");
+  duk::push(ctx_, std::make_shared<Vector>(1.0f, 1.0f), prototypeHandle);
+  duk_put_prop_string(ctx_, -2, "v4");
 
   duk_pop(ctx_); // Pop global object
 
@@ -432,7 +431,7 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, R"__(
-    addVector(new Vector(1, 1), new Vector(2, 3)).length()
+    addVector(v4, new Vector(2, 3)).length()
   )__");
   REQUIRE(equals(duk::pull<float>(ctx_, -1), 5.0f, 1e-5f));
   duk_pop(ctx_);

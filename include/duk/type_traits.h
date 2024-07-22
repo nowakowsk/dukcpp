@@ -3,13 +3,16 @@
 
 #include <duk/class.h>
 #include <duk/common.h>
+#include <duk/detail/any.h>
 #include <duk/error.h>
 #include <duk/function.h>
 #include <duk/string_traits.h>
+#include <duk/type_adapter.h>
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
 #include <typeindex>
 #include <type_traits>
+#include <variant>
 
 
 namespace duk
@@ -24,6 +27,53 @@ template<typename Signature, typename ArgIdx>
 struct FunctionWrapper;
 
 
+template<typename T>
+struct ObjectInfoPassthroughImpl
+{
+  ObjectInfoPassthroughImpl(auto&& obj) :
+    obj_(std::forward<decltype(obj)>(obj))
+  {
+  }
+
+  T& get()
+  {
+    return obj_;
+  }
+
+private:
+  T obj_;
+};
+
+
+template<typename T>
+struct ObjectInfoAdapterImpl
+{
+  using GetImpl = T&(*)(ObjectInfoAdapterImpl&);
+
+  ObjectInfoAdapterImpl(duk_context* ctx, auto&& obj) :
+    obj_(std::forward<decltype(obj)>(obj), allocator<std::byte>(ctx)),
+    getImpl_(
+      [](ObjectInfoAdapterImpl& info) -> T&
+      {
+        using DecayObj = std::decay_t<decltype(obj)>;
+
+        return type_adapter<DecayObj>::template get<T&>(info.obj_.template cast<DecayObj&>());
+      }
+    )
+  {
+  }
+
+  T& get()
+  {
+    return getImpl_(*this);
+  }
+
+private:
+  any<allocator<std::byte>> obj_;
+  GetImpl getImpl_;
+};
+
+
 struct ObjectInfo
 {
   ObjectInfo(const std::type_index& typeId) noexcept :
@@ -36,15 +86,38 @@ struct ObjectInfo
 
 
 template<typename T>
-struct ObjectInfoImpl : public ObjectInfo
+struct ObjectInfoImpl : ObjectInfo
 {
-  ObjectInfoImpl(auto&& obj) :
+  ObjectInfoImpl(duk_context*, auto&& obj)
+    requires(!has_type_adapter<std::decay_t<decltype(obj)>>) :
     ObjectInfo(typeid(T)),
-    obj(std::forward<decltype(obj)>(obj))
+    impl_(std::in_place_index<0>, std::forward<decltype(obj)>(obj))
   {
   }
 
-  T obj;
+  ObjectInfoImpl(duk_context* ctx, auto&& obj)
+    requires(has_type_adapter<std::decay_t<decltype(obj)>>) :
+    ObjectInfo(typeid(T)),
+    impl_(std::in_place_index<1>, ctx, std::forward<decltype(obj)>(obj))
+  {
+  }
+
+  T& get()
+  {
+    return std::visit(
+      [](auto&& impl) -> T&
+      {
+        return impl.get();
+      },
+      impl_
+    );
+  }
+
+private:
+  std::variant<
+    ObjectInfoPassthroughImpl<T>,
+    ObjectInfoAdapterImpl<T>
+  > impl_;
 };
 
 
@@ -58,11 +131,13 @@ struct type_traits
   // TODO: Make it shared across all T types by moving it out of this struct template.
   static constexpr auto objInfoName = DUKCPP_DETAIL_INTERNAL_NAME("objInfo");
 
-  using DecayT = std::decay_t<T>;
+  using DecayT = type_adapter_type_t<std::decay_t<T>>;
   using ObjectInfoImpl = detail::ObjectInfoImpl<DecayT>;
 
   static void push(duk_context* ctx, auto&& obj, void* prototype_heapptr = nullptr)
   {
+    static_assert(std::is_convertible_v<type_adapter_type_t<std::decay_t<decltype(obj)>>, DecayT>);
+
     static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
     {
       duk_get_prop_string(ctx, 0, objInfoName);
@@ -74,7 +149,7 @@ struct type_traits
       return 0;
     };
 
-    auto* objInfo = make<ObjectInfoImpl>(ctx, std::forward<decltype(obj)>(obj));
+    auto* objInfo = make<ObjectInfoImpl>(ctx, ctx, std::forward<decltype(obj)>(obj));
 
     if (duk_is_constructor_call(ctx))
       duk_push_this(ctx);
@@ -110,7 +185,7 @@ struct type_traits
     auto objInfo = static_cast<ObjectInfoImpl*>(duk_get_pointer(ctx, -1));
     duk_pop(ctx);
 
-    return objInfo->obj;
+    return objInfo->get();
   }
 
   [[nodiscard]]

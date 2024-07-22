@@ -1,9 +1,32 @@
 #ifndef DUKCPP_TEST_COMMON_H
 #define DUKCPP_TEST_COMMON_H
 
+#include <duk/type_adapter.h>
 #include <cmath>
+#include <memory>
 #include <string>
 #include <string_view>
+
+
+namespace duk
+{
+
+
+template<typename T>
+struct type_adapter<std::shared_ptr<T>>
+{
+  using type = T;
+
+  template<typename U>
+  [[nodiscard]]
+  static U get(std::shared_ptr<T> ptr)
+  {
+    return *ptr;
+  }
+};
+
+
+} // namespace duk
 
 
 template<typename T>

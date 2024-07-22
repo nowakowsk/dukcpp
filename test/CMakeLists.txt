@@ -8,6 +8,7 @@ find_package(Catch2 REQUIRED)
 # dukcpp-test
 
 add_executable(dukcpp-test
+  any.cpp
   common.cpp
   test.cpp
   vector.cpp
