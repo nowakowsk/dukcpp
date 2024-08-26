@@ -5,7 +5,7 @@
 #include <duk/common.h>
 #include <duk/detail/any.h>
 #include <duk/error.h>
-#include <duk/function.h>
+#include <duk/function_handle.h>
 #include <duk/string_traits.h>
 #include <duk/type_adapter.h>
 #include <boost/callable_traits.hpp>
@@ -273,7 +273,7 @@ struct type_traits<T>
   {
     using Func = boost::callable_traits::function_type_t<func_t>;
 
-    return function<Func>({ctx, idx});
+    return function_handle<Func>({ctx, idx});
   }
 
   [[nodiscard]]

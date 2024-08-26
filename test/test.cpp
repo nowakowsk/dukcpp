@@ -361,7 +361,7 @@ TEST_CASE_METHOD(DukCppTest, "Safe handle (function)")
 
   duk_gc(ctx_, 0);
 
-  auto func = duk::function<int()>(funcHandle.get());
+  auto func = duk::function_handle<int()>(funcHandle.get());
 
   REQUIRE(func() == 123);
 }

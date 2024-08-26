@@ -1,5 +1,5 @@
-#ifndef DUKCPP_FUNCTION_H
-#define DUKCPP_FUNCTION_H
+#ifndef DUKCPP_FUNCTION_HANDLE_H
+#define DUKCPP_FUNCTION_HANDLE_H
 
 #include <duk/common.h>
 #include <duk/handle.h>
@@ -14,10 +14,10 @@ namespace duk
 
 // Non-owning handle to Duktape function.
 template<typename T>
-class function
+class function_handle
 {
 public:
-  function(const handle& handle) :
+  function_handle(const handle& handle) :
     handle_(handle)
   {
   }
@@ -41,7 +41,7 @@ private:
 
 
 template<typename T>
-struct callable_traits<function<T>>
+struct callable_traits<function_handle<T>>
 {
   using type = T;
 };
@@ -50,4 +50,4 @@ struct callable_traits<function<T>>
 } // namespace duk
 
 
-#endif // DUKCPP_FUNCTION_H
+#endif // DUKCPP_FUNCTION_HANDLE_H

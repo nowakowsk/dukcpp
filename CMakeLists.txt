@@ -43,7 +43,7 @@ add_library(${MODULE_NAME}
   include/duk/context.h
   include/duk/duk.h
   include/duk/error.h
-  include/duk/function.h
+  include/duk/function_handle.h
   include/duk/function_helpers.h
   include/duk/handle.h
   include/duk/safe_handle.h
