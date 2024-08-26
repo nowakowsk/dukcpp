@@ -10,15 +10,19 @@ namespace duk
 {
 
 
-// Forward declarations
+namespace detail
+{
+
 template<typename T>
 struct type_traits;
+
+} // namespace detail
 
 
 template<typename T>
 void push(duk_context* ctx, T&& value, auto&&... args)
 {
-  type_traits<T>::push(ctx, std::forward<T>(value), std::forward<decltype(args)>(args)...);
+  detail::type_traits<T>::push(ctx, std::forward<T>(value), std::forward<decltype(args)>(args)...);
 }
 
 
@@ -26,7 +30,7 @@ template<typename T>
 [[nodiscard]]
 decltype(auto) pull(duk_context* ctx, duk_idx_t idx)
 {
-  return type_traits<T>::pull(ctx, idx);
+  return detail::type_traits<T>::pull(ctx, idx);
 }
 
 
@@ -35,10 +39,10 @@ template<typename T>
 [[nodiscard]]
 decltype(auto) safe_pull(duk_context* ctx, duk_idx_t idx)
 {
-  if (!type_traits<T>::check_type(ctx, idx))
+  if (!detail::type_traits<T>::check_type(ctx, idx))
     throw error(ctx, "unexpected type");
 
-  return type_traits<T>::pull(ctx, idx);
+  return detail::type_traits<T>::pull(ctx, idx);
 }
 
 

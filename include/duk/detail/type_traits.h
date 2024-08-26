@@ -1,5 +1,5 @@
-#ifndef DUKCPP_TYPE_TRAITS_H
-#define DUKCPP_TYPE_TRAITS_H
+#ifndef DUKCPP_DETAIL_TYPE_TRAITS_H
+#define DUKCPP_DETAIL_TYPE_TRAITS_H
 
 #include <duk/class.h>
 #include <duk/common.h>
@@ -15,11 +15,7 @@
 #include <variant>
 
 
-namespace duk
-{
-
-
-namespace detail
+namespace duk::detail
 {
 
 
@@ -119,9 +115,6 @@ private:
     ObjectInfoAdapterImpl<T>
   > impl_;
 };
-
-
-} // namespace detail
 
 
 template<typename T>
@@ -428,7 +421,7 @@ struct type_traits<void>
 };
 
 
-} // namespace duk
+} // namespace duk::detail
 
 
-#endif // DUKCPP_TYPE_TRAITS_H
+#endif // DUKCPP_DETAIL_TYPE_TRAITS_H

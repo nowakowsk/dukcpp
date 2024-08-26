@@ -1,8 +1,8 @@
 #ifndef DUKCPP_FUNCTION_HELPERS_H
 #define DUKCPP_FUNCTION_HELPERS_H
 
-#include <duk/type_traits.h>
 #include <duk/detail/function_wrapper.h>
+#include <duk/detail/type_traits.h>
 #include <duktape.h>
 #include <string_view>
 #include <utility>
@@ -47,7 +47,7 @@ void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
 template<typename func_t>
 void push_function(duk_context* ctx, func_t&& func)
 {
-  type_traits<as_function<func_t>>::push(ctx, std::forward<func_t>(func));
+  detail::type_traits<as_function<func_t>>::push(ctx, std::forward<func_t>(func));
 }
 
 
