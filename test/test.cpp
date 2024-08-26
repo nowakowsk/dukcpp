@@ -104,6 +104,28 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: unsi
 }
 
 
+TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: float")
+{
+  duk_push_global_object(ctx_);
+  duk::put_function<identity<float, float>>(ctx_, -1, "float_float");
+  duk::put_function<identity<float, const float&>>(ctx_, -1, "float_creffloat");
+  duk::put_function<identity<const float&, const float&>>(ctx_, -1, "creffloat_creffloat");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "float_float(1)");
+  REQUIRE(equals(duk::pull<float>(ctx_, -1), 1.0f, 1e-5f));
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "float_creffloat(1)");
+  REQUIRE(equals(duk::pull<float>(ctx_, -1), 1.0f, 1e-5f));
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "creffloat_creffloat(1)");
+  REQUIRE(equals(duk::pull<const float&>(ctx_, -1), 1.0f, 1e-5f));
+  duk_pop(ctx_);
+}
+
+
 TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: bool")
 {
   duk_push_global_object(ctx_);
@@ -126,24 +148,29 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: bool
 }
 
 
-TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: float")
+TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: enum")
 {
+  enum class Enum
+  {
+    A, B, C
+  };
+
   duk_push_global_object(ctx_);
-  duk::put_function<identity<float, float>>(ctx_, -1, "float_float");
-  duk::put_function<identity<float, const float&>>(ctx_, -1, "float_creffloat");
-  duk::put_function<identity<const float&, const float&>>(ctx_, -1, "creffloat_creffloat");
+  duk::put_function<identity<Enum, Enum>>(ctx_, -1, "enum_enum");
+  duk::put_function<identity<Enum, const Enum&>>(ctx_, -1, "enum_crefenum");
+  duk::put_function<identity<const Enum&, const Enum&>>(ctx_, -1, "crefenum_crefenum");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "float_float(1)");
-  REQUIRE(equals(duk::pull<float>(ctx_, -1), 1.0f, 1e-5f));
+  duk_eval_string(ctx_, "enum_enum(0)");
+  REQUIRE(duk::pull<Enum>(ctx_, -1) == Enum::A);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "float_creffloat(1)");
-  REQUIRE(equals(duk::pull<float>(ctx_, -1), 1.0f, 1e-5f));
+  duk_eval_string(ctx_, "enum_crefenum(1)");
+  REQUIRE(duk::pull<Enum>(ctx_, -1) == Enum::B);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "creffloat_creffloat(1)");
-  REQUIRE(equals(duk::pull<const float&>(ctx_, -1), 1.0f, 1e-5f));
+  duk_eval_string(ctx_, "crefenum_crefenum(2)");
+  REQUIRE(duk::pull<const Enum&>(ctx_, -1) == Enum::C);
   duk_pop(ctx_);
 }
 

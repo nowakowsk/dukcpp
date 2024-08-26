@@ -372,6 +372,31 @@ struct type_traits<T>
 };
 
 
+template<enumeration T>
+struct type_traits<T>
+{
+  using DecayT = std::decay_t<T>;
+  using IntT = std::underlying_type_t<DecayT>;
+
+  static void push(duk_context* ctx, T value)
+  {
+    type_traits<IntT>::push(ctx, static_cast<IntT>(value));
+  }
+
+  [[nodiscard]]
+  static auto pull(duk_context* ctx, duk_idx_t idx)
+  {
+    return static_cast<DecayT>(type_traits<IntT>::pull(ctx, idx));
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  {
+    return type_traits<IntT>::check_type(ctx, idx);
+  }
+};
+
+
 template<string_type T>
 struct type_traits<T>
 {

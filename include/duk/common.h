@@ -27,6 +27,11 @@ concept floating_point =
 
 
 template<typename T>
+concept enumeration = 
+  std::is_enum_v<std::decay_t<T>>;
+
+
+template<typename T>
 concept boolean = 
   std::is_same_v<std::decay_t<T>, bool>;
 
