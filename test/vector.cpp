@@ -1,6 +1,6 @@
 #include "vector.h"
-#include <cmath>
 #include <duk/duk.h>
+#include <cmath>
 
 
 Vector::Vector()

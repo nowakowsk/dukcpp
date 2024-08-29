@@ -34,11 +34,14 @@ add_duktape_library(dukcpp-duktape "${DUKCPP_DUKTAPE_PATH}" ${DUKTAPE_OPTIONS})
 # dukcpp
 
 add_library(${MODULE_NAME}
+  include/duk/detail/any.h
   include/duk/detail/function_wrapper.h
   include/duk/detail/memory_resource.h
   include/duk/detail/type_traits.h
   include/duk/allocator.h
   include/duk/allocator_adapter.h
+  include/duk/callable.h
+  include/duk/class.h
   include/duk/common.h
   include/duk/context.h
   include/duk/duk.h
@@ -49,6 +52,10 @@ add_library(${MODULE_NAME}
   include/duk/safe_handle.h
   include/duk/scoped_pop.h
   include/duk/std.h
+  include/duk/string_traits.h
+  include/duk/type_adapter.h
+  include/duk/type_id_static_ptr.h
+  include/duk/type_id_typeid.h
   include/duk/type_traits_helpers.h
 
   src/context.cpp

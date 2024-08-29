@@ -493,7 +493,7 @@ TEST_CASE_METHOD(DukCppTest, "Generic object binding")
   // Invalid arguments
   duk::push_function<f>(ctx_);
   duk::push(ctx_, A{});
-  duk::push(ctx_, 1);
+  duk::push(ctx_, A{});
   REQUIRE_THROWS(duk_call(ctx_, 2));
   duk_pop(ctx_);
 }

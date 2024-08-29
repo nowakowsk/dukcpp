@@ -1,7 +1,6 @@
 #ifndef DUKCPP_DETAIL_ANY_H
 #define DUKCPP_DETAIL_ANY_H
 
-#include <typeindex>
 #include <type_traits>
 #include <utility>
 #include <vector>
@@ -28,7 +27,7 @@ class any final
 public:
   any(auto&& obj, const Allocator& alloc = Allocator()) :
     buffer_(sizeof(std::decay_t<decltype(obj)>), alloc),
-    typeIdx_(typeid(std::decay_t<decltype(obj)>)),
+    typeId_(type_id<std::decay_t<decltype(obj)>>()),
     deleter_(
       [](void* buffer)
       {
@@ -65,7 +64,7 @@ public:
 
     static constexpr bool isConst = std::is_const_v<std::remove_reference_t<Self>>;
 
-    if (self.typeIdx_ != typeid(DecayU))
+    if (self.typeId_ != type_id<std::decay_t<DecayU>>())
       throw bad_any_cast();
 
     return *static_cast<std::conditional_t<isConst, const DecayU*, DecayU*>>(
@@ -82,7 +81,7 @@ public:
   {
     using DecayU = std::decay_t<U>;
 
-    if (typeIdx_ != typeid(DecayU))
+    if (typeId_ != type_id<std::decay_t<DecayU>>())
       throw bad_any_cast();
 
     return *static_cast<DecayU*>(static_cast<void*>(buffer_.data()));
@@ -94,7 +93,7 @@ public:
   {
     using DecayU = std::decay_t<U>;
 
-    if (typeIdx_ != typeid(DecayU))
+    if (typeId_ != type_id<std::decay_t<DecayU>>())
       throw bad_any_cast();
 
     return *static_cast<const DecayU*>(static_cast<const void*>(buffer_.data()));
@@ -102,7 +101,7 @@ public:
 
 private:
   std::vector<std::byte, Allocator> buffer_;
-  std::type_index typeIdx_;
+  std::size_t typeId_;
   Deleter deleter_;
 };
 

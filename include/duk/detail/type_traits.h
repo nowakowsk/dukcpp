@@ -10,7 +10,6 @@
 #include <duk/type_adapter.h>
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
-#include <typeindex>
 #include <type_traits>
 #include <variant>
 
@@ -72,12 +71,12 @@ private:
 
 struct ObjectInfo
 {
-  ObjectInfo(const std::type_index& typeId) noexcept :
+  ObjectInfo(std::size_t typeId) noexcept :
     typeId(typeId)
   {
   }
 
-  std::type_index typeId;
+  std::size_t typeId;
 };
 
 
@@ -86,14 +85,14 @@ struct ObjectInfoImpl : ObjectInfo
 {
   ObjectInfoImpl(duk_context*, auto&& obj)
     requires(!has_type_adapter<std::decay_t<decltype(obj)>>) :
-    ObjectInfo(typeid(T)),
+    ObjectInfo(type_id<T>()),
     impl_(std::in_place_index<0>, std::forward<decltype(obj)>(obj))
   {
   }
 
   ObjectInfoImpl(duk_context* ctx, auto&& obj)
     requires(has_type_adapter<std::decay_t<decltype(obj)>>) :
-    ObjectInfo(typeid(T)),
+    ObjectInfo(type_id<T>()),
     impl_(std::in_place_index<1>, ctx, std::forward<decltype(obj)>(obj))
   {
   }
@@ -195,7 +194,7 @@ struct type_traits
     auto objInfo = static_cast<detail::ObjectInfo*>(duk_get_pointer(ctx, -1));
     duk_pop(ctx);
 
-    return objInfo->typeId == typeid(DecayT);
+    return objInfo->typeId == type_id<DecayT>();
   }
 };
 

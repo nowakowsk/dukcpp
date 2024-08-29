@@ -1,6 +1,6 @@
 #include "lifetime.h"
+#include <duk/duk.h>
 #include <catch2/catch_test_macros.hpp>
-#include <duk/detail/any.h>
 #include <string>
 
 

@@ -1,6 +1,10 @@
 #ifndef DUKCPP_DUK_H
 #define DUKCPP_DUK_H
 
+#ifndef DUKCPP_USE_CUSTOM_RTTI
+#include <duk/type_id_typeid.h>
+#endif // DUKCPP_USE_CUSTOM_RTTI
+
 #include <duk/allocator.h>
 #include <duk/allocator_adapter.h>
 #include <duk/callable.h>
