@@ -10,6 +10,7 @@ find_package(Catch2 REQUIRED)
 add_executable(dukcpp-test
   any.cpp
   common.cpp
+  inheritance.cpp
   test.cpp
   vector.cpp
 )

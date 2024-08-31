@@ -21,6 +21,13 @@ concept has_class_traits_prototype = requires(duk_context* ctx)
 
 
 template<typename T>
+concept has_class_traits_base = requires
+{
+  typename class_traits<T>::base;
+};
+
+
+template<typename T>
 [[nodiscard]]
 T ctor(auto&& ...args)
 {

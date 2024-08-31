@@ -71,12 +71,22 @@ private:
 
 struct ObjectInfo
 {
-  ObjectInfo(std::size_t typeId) noexcept :
-    typeId(typeId)
+  virtual ~ObjectInfo() = default;
+
+  [[nodiscard]]
+  virtual bool checkType(std::size_t typeId) const = 0;
+
+  // Calling this without checking type with checkType first is undefined behavior.
+  template<typename T>
+  [[nodiscard]]
+  T& get()
   {
+    return *static_cast<T*>(getImpl());
   }
 
-  std::size_t typeId;
+private:
+  [[nodiscard]]
+  virtual void* getImpl() = 0;
 };
 
 
@@ -85,30 +95,50 @@ struct ObjectInfoImpl : ObjectInfo
 {
   ObjectInfoImpl(duk_context*, auto&& obj)
     requires(!has_type_adapter<std::decay_t<decltype(obj)>>) :
-    ObjectInfo(type_id<T>()),
     impl_(std::in_place_index<0>, std::forward<decltype(obj)>(obj))
   {
   }
 
   ObjectInfoImpl(duk_context* ctx, auto&& obj)
     requires(has_type_adapter<std::decay_t<decltype(obj)>>) :
-    ObjectInfo(type_id<T>()),
     impl_(std::in_place_index<1>, ctx, std::forward<decltype(obj)>(obj))
   {
   }
 
-  T& get()
+  [[nodiscard]]
+  bool checkType(std::size_t typeId) const override
+  {
+    return checkTypeImpl(typeId);
+  }
+
+  [[nodiscard]]
+  static bool checkTypeImpl(std::size_t typeId)
+  {
+    if constexpr (has_class_traits_base<T>)
+    {
+      static_assert(std::is_base_of_v<typename class_traits<T>::base, T>, "Incorrect base type specified.");
+
+      return typeId == type_id<T>() || ObjectInfoImpl<typename class_traits<T>::base>::checkTypeImpl(typeId);
+    }
+    else
+    {
+      return typeId == type_id<T>();
+    }
+  }
+
+private:
+  [[nodiscard]]
+  void* getImpl() override
   {
     return std::visit(
-      [](auto&& impl) -> T&
+      [](auto&& impl) -> T*
       {
-        return impl.get();
+        return &impl.get();
       },
       impl_
     );
   }
 
-private:
   std::variant<
     ObjectInfoPassthroughImpl<T>,
     ObjectInfoAdapterImpl<T>
@@ -124,16 +154,17 @@ struct type_traits
   static constexpr auto objInfoName = DUKCPP_DETAIL_INTERNAL_NAME("objInfo");
 
   using DecayT = type_adapter_type_t<std::decay_t<T>>;
-  using ObjectInfoImpl = detail::ObjectInfoImpl<DecayT>;
 
   static void push(duk_context* ctx, auto&& obj, void* prototype_heapptr = nullptr)
   {
+    using ObjectInfoImplT = ObjectInfoImpl<DecayT>;
+
     static_assert(std::is_convertible_v<type_adapter_type_t<std::decay_t<decltype(obj)>>, DecayT>);
 
     static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
     {
       duk_get_prop_string(ctx, 0, objInfoName);
-      auto objInfo = static_cast<ObjectInfoImpl*>(duk_get_pointer(ctx, -1));
+      auto objInfo = static_cast<ObjectInfoImplT*>(duk_get_pointer(ctx, -1));
       duk_pop(ctx);
 
       free(ctx, objInfo);
@@ -141,7 +172,7 @@ struct type_traits
       return 0;
     };
 
-    auto* objInfo = make<ObjectInfoImpl>(ctx, ctx, std::forward<decltype(obj)>(obj));
+    auto* objInfo = make<ObjectInfoImplT>(ctx, ctx, std::forward<decltype(obj)>(obj));
 
     if (duk_is_constructor_call(ctx))
       duk_push_this(ctx);
@@ -171,13 +202,13 @@ struct type_traits
   static T pull(duk_context* ctx, duk_idx_t idx)
   {
     // TODO:
-    // Accessing property here isn't ideal since, in most cases, it's already been done in check_type().
+    // Accessing property here isn't ideal since, in most cases, it's already been done in check_type.
     // I am not sure how bad it is for the peformance, but could be significant. Consider optimizing it somehow.
     duk_get_prop_string(ctx, idx, objInfoName);
-    auto objInfo = static_cast<ObjectInfoImpl*>(duk_get_pointer(ctx, -1));
+    auto objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
     duk_pop(ctx);
 
-    return objInfo->get();
+    return objInfo->get<DecayT>();
   }
 
   [[nodiscard]]
@@ -191,10 +222,10 @@ struct type_traits
       duk_pop(ctx);
       return false;
     }
-    auto objInfo = static_cast<detail::ObjectInfo*>(duk_get_pointer(ctx, -1));
+    auto objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
     duk_pop(ctx);
 
-    return objInfo->typeId == type_id<DecayT>();
+    return objInfo->checkType(type_id<DecayT>());
   }
 };
 
@@ -234,7 +265,7 @@ struct type_traits<T>
 
           static constexpr auto argCount = std::tuple_size_v<ArgsTuple>;
 
-          return detail::FunctionWrapper<
+          return FunctionWrapper<
             Signature, std::make_index_sequence<argCount>
           >::run(ctx, *funcPtr);
         }()) < 0) && ...))

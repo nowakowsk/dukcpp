@@ -1,4 +1,5 @@
 #include "common.h"
+#include "inheritance.h"
 #include "lifetime.h"
 #include "vector.h"
 #include <duk/duk.h>
@@ -462,6 +463,76 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
   )__");
   REQUIRE(equals(duk::pull<float>(ctx_, -1), 5.0f, 1e-5f));
   duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Inheritance")
+{
+  auto assertEq = [this](const char* code, const char* result)
+  {
+    duk_eval_string(ctx_, code);
+    REQUIRE(duk::pull<std::string>(ctx_, -1) == result);
+    duk_pop(ctx_);
+  };
+
+  constexpr auto runMethodA = [](InhBase& obj) { return obj.methodA(); };
+  constexpr auto runMethodB = [](InhDer& obj) { return obj.methodB(); };
+  constexpr auto runMethodC = [](InhFinal& obj) { return obj.methodC(); };
+
+  duk_push_global_object(ctx_);
+
+  // These need to be called in that order to make sure base class prototypes are initialized.
+  registerInhBase(ctx_, -1);
+  registerInhDer(ctx_, -1);
+  registerInhFinal(ctx_, -1);
+
+  duk::put_function<std::make_shared<InhBase>>(ctx_, -1, "makeInhBase");
+  duk::put_function<std::make_shared<InhDer>>(ctx_, -1, "makeInhDer");
+  duk::put_function<std::make_shared<InhFinal>>(ctx_, -1, "makeInhFinal");
+
+  duk::put_function<runMethodA>(ctx_, -1, "runMethodA");
+  duk::put_function<runMethodB>(ctx_, -1, "runMethodB");
+  duk::put_function<runMethodC>(ctx_, -1, "runMethodC");
+
+  duk_pop(ctx_); // Pop global object
+
+  SECTION("Values")
+  {
+    duk_eval_string(ctx_, R"__(
+      var base = new InhBase();
+      var der = new InhDer();
+      var final = new InhFinal();
+    )__");
+  }
+
+  SECTION("Pointers")
+  {
+    duk_eval_string(ctx_, R"__(
+      var base = makeInhBase();
+      var der = makeInhDer();
+      var final = makeInhFinal();
+    )__");
+  }
+
+  assertEq("base.methodA();", "BaseA");
+
+  assertEq("der.methodA();", "DerA");
+  assertEq("der.methodB();", "DerB");
+
+  assertEq("final.methodA();", "FinalA");
+  assertEq("final.methodB();", "FinalB");
+  assertEq("final.methodC();", "FinalC");
+
+  assertEq("runMethodA(base);", "BaseA");
+  
+  assertEq("runMethodA(der);", "DerA");
+  assertEq("runMethodB(der);", "DerB");
+
+  assertEq("runMethodA(final);", "FinalA");
+  assertEq("runMethodB(final);", "FinalB");
+  assertEq("runMethodC(final);", "FinalC");
+
+  REQUIRE_THROWS(duk_eval_string(ctx_, "base.methodC();"));
 }
 
 
