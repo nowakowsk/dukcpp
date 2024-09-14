@@ -3,15 +3,14 @@
 
 #include <duk/class.h>
 #include <duk/common.h>
-#include <duk/detail/any.h>
 #include <duk/error.h>
 #include <duk/function_handle.h>
 #include <duk/string_traits.h>
 #include <duk/type_adapter.h>
+
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
 #include <type_traits>
-#include <variant>
 
 
 namespace duk::detail
@@ -22,127 +21,156 @@ template<typename Signature, typename ArgIdx>
 struct FunctionWrapper;
 
 
-template<typename T>
-struct ObjectInfoPassthroughImpl
-{
-  ObjectInfoPassthroughImpl(auto&& obj) :
-    obj_(std::forward<decltype(obj)>(obj))
-  {
-  }
-
-  T& get()
-  {
-    return obj_;
-  }
-
-private:
-  T obj_;
-};
-
-
-template<typename T>
-struct ObjectInfoAdapterImpl
-{
-  using GetImpl = T&(*)(ObjectInfoAdapterImpl&);
-
-  ObjectInfoAdapterImpl(duk_context* ctx, auto&& obj) :
-    obj_(std::forward<decltype(obj)>(obj), allocator<std::byte>(ctx)),
-    getImpl_(
-      [](ObjectInfoAdapterImpl& info) -> T&
-      {
-        using DecayObj = std::decay_t<decltype(obj)>;
-
-        return type_adapter<DecayObj>::template get<T&>(info.obj_.template cast<DecayObj&>());
-      }
-    )
-  {
-  }
-
-  T& get()
-  {
-    return getImpl_(*this);
-  }
-
-private:
-  any<allocator<std::byte>> obj_;
-  GetImpl getImpl_;
-};
-
-
 struct ObjectInfo
 {
+  ObjectInfo(duk_context* ctx) :
+    ctx_(ctx)
+  {
+  }
+
   virtual ~ObjectInfo() = default;
 
   [[nodiscard]]
-  virtual bool checkType(std::size_t typeId) const = 0;
+  virtual bool checkType(std::size_t typeId) = 0;
 
-  // Calling this without checking type with checkType first is undefined behavior.
+  // What's happening here is quite hard to follow, so here is a short explanation.
+  //
+  // Depending on whether requested T has a type adapter, we return either T (adapter exists) or T& (adapter
+  // doesn't exist). In each case, we create a buffer on the stack, and pass it along with requested type id to
+  // getImpl, which in turn makes sure the buffer gets filled with data matching the requested type. It's either T
+  // (when adapter exists) or T* (otherwise). We are doing reinterpret_casts here, so returned data needs to match
+  // requested type *exactly*.
+  //
+  // The reason why two separate paths are needed is support for "inheritance" of adapted types. Such types don't
+  // necessarily need to belong to a common inheritance hierarchy (think: std::shared_ptr<Base> and
+  // std::shared_ptr<Der>, where Der inherits from Base), yet we still want to support automatic conversion between
+  // them. In order to do that, we can't just return a pointer to the object of requested type, but we need to perform
+  // an actual type conversion. It is done by ObjectInfoImpl<U>::getImpl() (note that U doesn't need to be
+  // the same as T). Since converted object needs to be put somewhere, we are using a buffer on the stack to avoid
+  // dynamic allocations. We can do that safely because we know the size of the requested type T.
+  //
+  // On the other hand, types which don't have a type adapter need to either match requested type exactly, or be
+  // related through inheritance. In this case, we can just return a pointer (cast to T*). That way, no unnecessary
+  // copies are made.
+  //
+  // The std::unique_ptr part is weird too, but it's just about making sure the object stored in the buffer gets
+  // released after a copy is returned from the function. This object is created with placement new on the stack,
+  // so we only need to call its destructor manually.
+  //
+  // I realize it's all kinda convoluted, and this explanation is far from perfect. I am really sorry you are having
+  // this experience. :)
+
   template<typename T>
   [[nodiscard]]
-  T& get()
+  decltype(auto) get()
   {
-    return *static_cast<T*>(getImpl());
+    std::byte buffer[has_type_adapter<T> ? sizeof(T) : sizeof(T*)];
+
+    if (!getImpl(type_id<T>(), buffer)) [[unlikely]]
+      throw error(ctx_, "invalid type requested");
+
+    if constexpr (has_type_adapter<T>)
+      return static_cast<T>(*std::unique_ptr<T, DtorDeleter<T>>(reinterpret_cast<T*>(&buffer)));
+    else
+      return static_cast<T&>(**reinterpret_cast<T**>(&buffer));
   }
+
+protected:
+  duk_context* ctx_ = nullptr;
 
 private:
   [[nodiscard]]
-  virtual void* getImpl() = 0;
+  virtual bool getImpl(std::size_t typeId, std::byte* buffer) = 0;
 };
 
 
 template<typename T>
 struct ObjectInfoImpl : ObjectInfo
 {
-  ObjectInfoImpl(duk_context*, auto&& obj)
-    requires(!has_type_adapter<std::decay_t<decltype(obj)>>) :
-    impl_(std::in_place_index<0>, std::forward<decltype(obj)>(obj))
-  {
-  }
-
-  ObjectInfoImpl(duk_context* ctx, auto&& obj)
-    requires(has_type_adapter<std::decay_t<decltype(obj)>>) :
-    impl_(std::in_place_index<1>, ctx, std::forward<decltype(obj)>(obj))
+  ObjectInfoImpl(duk_context* ctx, auto&& obj) :
+    ObjectInfo(ctx),
+    obj_(std::forward<decltype(obj)>(obj))
   {
   }
 
   [[nodiscard]]
-  bool checkType(std::size_t typeId) const override
+  bool checkType(std::size_t typeId) override
   {
-    return checkTypeImpl(typeId);
-  }
-
-  [[nodiscard]]
-  static bool checkTypeImpl(std::size_t typeId)
-  {
-    if constexpr (has_class_traits_base<T>)
-    {
-      static_assert(std::is_base_of_v<typename class_traits<T>::base, T>, "Incorrect base type specified.");
-
-      return typeId == type_id<T>() || ObjectInfoImpl<typename class_traits<T>::base>::checkTypeImpl(typeId);
-    }
-    else
-    {
-      return typeId == type_id<T>();
-    }
+    return getImpl(typeId, nullptr);
   }
 
 private:
+  template<typename Type>
+  requires has_type_adapter<Type>
   [[nodiscard]]
-  void* getImpl() override
+  bool getImplType(std::size_t typeId, std::byte* buffer)
   {
-    return std::visit(
-      [](auto&& impl) -> T*
+    if (typeId == type_id<Type>())
+    {
+      if (buffer)
+        new (buffer) Type(obj_);
+
+      return true;
+    }
+
+    using AdaptedT = type_adapter_type_t<Type>;
+
+    if (typeId == type_id<AdaptedT>())
+    {
+      if (buffer)
       {
-        return &impl.get();
-      },
-      impl_
-    );
+        AdaptedT* obj = &type_adapter<Type>::template get<AdaptedT&>(obj_);
+        std::memcpy(buffer, &obj, sizeof(obj));
+      }
+
+      return true;
+    }
+
+    if constexpr (has_type_adapter_base<Type>)
+    {
+      using BaseT = type_adapter_base_t<Type>;
+
+      if (getImplType<BaseT>(typeId, buffer))
+        return true;
+    }
+
+    return false;
   }
 
-  std::variant<
-    ObjectInfoPassthroughImpl<T>,
-    ObjectInfoAdapterImpl<T>
-  > impl_;
+  template<typename Type>
+  requires (!has_type_adapter<Type>)
+  [[nodiscard]]
+  bool getImplType(std::size_t typeId, std::byte* buffer)
+  {
+    if (typeId == type_id<Type>())
+    {
+      if (buffer)
+      {
+        auto obj = static_cast<Type*>(&obj_);
+        std::memcpy(buffer, &obj, sizeof(obj));
+      }
+
+      return true;
+    }
+
+    if constexpr (has_class_traits_base<Type>)
+    {
+      using BaseT = class_traits_base_t<Type>;
+
+      if (getImplType<BaseT>(typeId, buffer))
+        return true;
+    }
+
+    return false;
+  }
+
+  [[nodiscard]]
+  bool getImpl(std::size_t typeId, std::byte* buffer) override
+  {
+    return getImplType<T>(typeId, buffer);
+  }
+
+  T obj_;
 };
 
 
@@ -153,13 +181,13 @@ struct type_traits
   // TODO: Make it shared across all T types by moving it out of this struct template.
   static constexpr auto objInfoName = DUKCPP_DETAIL_INTERNAL_NAME("objInfo");
 
-  using DecayT = type_adapter_type_t<std::decay_t<T>>;
+  using DecayT = std::decay_t<T>;
 
   static void push(duk_context* ctx, auto&& obj, void* prototype_heapptr = nullptr)
   {
     using ObjectInfoImplT = ObjectInfoImpl<DecayT>;
 
-    static_assert(std::is_convertible_v<type_adapter_type_t<std::decay_t<decltype(obj)>>, DecayT>);
+    static_assert(std::is_convertible_v<std::decay_t<decltype(obj)>, DecayT>);
 
     static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
     {
@@ -185,10 +213,12 @@ struct type_traits
     duk_push_c_function(ctx, finalizer, 2);
     duk_set_finalizer(ctx, -2);
 
-    if constexpr (has_class_traits_prototype<DecayT>)
+    using AdaptedT = type_adapter_type_t<DecayT>;
+
+    if constexpr (has_class_traits_prototype<AdaptedT>)
     {
       if (!prototype_heapptr)
-        prototype_heapptr = class_traits<DecayT>::prototype_heapptr(ctx);
+        prototype_heapptr = class_traits<AdaptedT>::prototype_heapptr(ctx);
     }
 
     if (prototype_heapptr)
@@ -314,7 +344,8 @@ struct type_traits<T>
 };
 
 
-template<integer T> requires std::is_signed_v<std::decay_t<T>>
+template<integer T>
+requires std::is_signed_v<std::decay_t<T>>
 struct type_traits<T>
 {
   static void push(duk_context* ctx, T value)
@@ -336,7 +367,8 @@ struct type_traits<T>
 };
 
 
-template<integer T> requires std::is_unsigned_v<std::decay_t<T>>
+template<integer T>
+requires std::is_unsigned_v<std::decay_t<T>>
 struct type_traits<T>
 {
   static void push(duk_context* ctx, T value)
@@ -456,7 +488,7 @@ struct type_traits<T>
 };
 
 
-// Kinda weird specialization, but it makes certain things easier (e.g. checking void function return value).
+// Kinda weird specialization, but it makes certain things easier (e.g. checking void function "return value").
 // May be removed if it causes problems.
 template<>
 struct type_traits<void>
@@ -465,7 +497,7 @@ struct type_traits<void>
 
   static void pull(duk_context* ctx, duk_idx_t idx)
   {
-    // no-op
+    // Do nothing.
   }
 
   [[nodiscard]]

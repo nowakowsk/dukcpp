@@ -71,19 +71,19 @@ private:
       duk_push_bare_array(handle_.ctx);
 
       duk_push_heapptr(handle_.ctx, handle_.heap_ptr);
-      if (!duk_put_prop_index(handle_.ctx, -2, OBJECT_IDX))
+      if (!duk_put_prop_index(handle_.ctx, -2, OBJECT_IDX)) [[unlikely]]
         throw error(handle_.ctx, "handle corrupted");
 
       duk_push_pointer(handle_.ctx, make<Info>(handle_.ctx));
-      if (!duk_put_prop_index(handle_.ctx, -2, INFO_IDX))
+      if (!duk_put_prop_index(handle_.ctx, -2, INFO_IDX)) [[unlikely]]
         throw error(handle_.ctx, "handle corrupted");
 
-      if (!duk_put_prop_heapptr(handle_.ctx, -2, handle_.heap_ptr))
+      if (!duk_put_prop_heapptr(handle_.ctx, -2, handle_.heap_ptr)) [[unlikely]]
         throw error(handle_.ctx, "handle corrupted");
     }
     else
     {
-      if (!duk_get_prop_index(handle_.ctx, -1, INFO_IDX))
+      if (!duk_get_prop_index(handle_.ctx, -1, INFO_IDX)) [[unlikely]]
         throw error(handle_.ctx, "handle corrupted");
 
       auto info = static_cast<Info*>(duk_get_pointer(handle_.ctx, -1));
@@ -104,7 +104,7 @@ private:
 
     if (duk_get_prop_heapptr(handle_.ctx, -1, handle_.heap_ptr))
     {
-      if (!duk_get_prop_index(handle_.ctx, -1, INFO_IDX))
+      if (!duk_get_prop_index(handle_.ctx, -1, INFO_IDX)) [[unlikely]]
         throw error(handle_.ctx, "handle corrupted");
 
       auto info = static_cast<Info*>(duk_get_pointer(handle_.ctx, -1));
@@ -113,13 +113,13 @@ private:
 
       if (--info->refCount == 0)
       {
-        if (!duk_del_prop_heapptr(handle_.ctx, -1, handle_.heap_ptr))
+        if (!duk_del_prop_heapptr(handle_.ctx, -1, handle_.heap_ptr)) [[unlikely]]
           throw error(handle_.ctx, "handle corrupted");
 
         free(handle_.ctx, info);
       }
     }
-    else
+    else [[unlikely]]
     {
       duk_pop(handle_.ctx); // Pop undefined.
       throw error(handle_.ctx, "handle corrupted");

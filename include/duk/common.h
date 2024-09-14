@@ -41,7 +41,7 @@ template<typename T>
 auto* make(duk_context* ctx, auto&&... args)
 {
   auto objBuffer = allocator<T>(ctx).allocate(1);
-  if (!objBuffer)
+  if (!objBuffer) [[unlikely]]
     throw error(ctx, "Memory allocation failed.");
 
   return new (objBuffer) T(std::forward<decltype(args)>(args)...);
@@ -59,6 +59,23 @@ void free(duk_context* ctx, T* ptr)
 
   allocator<T>(ctx).deallocate(ptr, 1);
 }
+
+
+namespace detail
+{
+
+
+template<typename T>
+struct DtorDeleter
+{
+  void operator()(T* ptr) const
+  {
+    ptr->~T();
+  }
+};
+
+
+} // namespace detail
 
 
 } // namespace duk

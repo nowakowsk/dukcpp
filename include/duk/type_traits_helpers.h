@@ -39,7 +39,7 @@ template<typename T>
 [[nodiscard]]
 decltype(auto) safe_pull(duk_context* ctx, duk_idx_t idx)
 {
-  if (!detail::type_traits<T>::check_type(ctx, idx))
+  if (!detail::type_traits<T>::check_type(ctx, idx)) [[unlikely]]
     throw error(ctx, "unexpected type");
 
   return detail::type_traits<T>::pull(ctx, idx);

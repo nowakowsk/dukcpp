@@ -479,6 +479,10 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
   constexpr auto runMethodB = [](InhDer& obj) { return obj.methodB(); };
   constexpr auto runMethodC = [](InhFinal& obj) { return obj.methodC(); };
 
+  constexpr auto runMethodPtrA = [](std::shared_ptr<InhBase> obj) { return obj->methodA(); };
+  constexpr auto runMethodPtrB = [](std::shared_ptr<InhDer> obj) { return obj->methodB(); };
+  constexpr auto runMethodPtrC = [](std::shared_ptr<InhFinal> obj) { return obj->methodC(); };
+
   duk_push_global_object(ctx_);
 
   // These need to be called in that order to make sure base class prototypes are initialized.
@@ -493,6 +497,10 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
   duk::put_function<runMethodA>(ctx_, -1, "runMethodA");
   duk::put_function<runMethodB>(ctx_, -1, "runMethodB");
   duk::put_function<runMethodC>(ctx_, -1, "runMethodC");
+
+  duk::put_function<runMethodPtrA>(ctx_, -1, "runMethodPtrA");
+  duk::put_function<runMethodPtrB>(ctx_, -1, "runMethodPtrB");
+  duk::put_function<runMethodPtrC>(ctx_, -1, "runMethodPtrC");
 
   duk_pop(ctx_); // Pop global object
 
@@ -512,6 +520,15 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
       var der = makeInhDer();
       var final = makeInhFinal();
     )__");
+
+    assertEq("runMethodPtrA(base);", "BaseA");
+    
+    assertEq("runMethodPtrA(der);", "DerA");
+    assertEq("runMethodPtrB(der);", "DerB");
+
+    assertEq("runMethodPtrA(final);", "FinalA");
+    assertEq("runMethodPtrB(final);", "FinalB");
+    assertEq("runMethodPtrC(final);", "FinalC");
   }
 
   assertEq("base.methodA();", "BaseA");

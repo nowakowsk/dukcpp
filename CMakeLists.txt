@@ -34,7 +34,6 @@ add_duktape_library(dukcpp-duktape "${DUKCPP_DUKTAPE_PATH}" ${DUKTAPE_OPTIONS})
 # dukcpp
 
 add_library(${MODULE_NAME}
-  include/duk/detail/any.h
   include/duk/detail/function_wrapper.h
   include/duk/detail/memory_resource.h
   include/duk/detail/type_traits.h

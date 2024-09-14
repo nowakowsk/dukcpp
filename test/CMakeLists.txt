@@ -8,7 +8,6 @@ find_package(Catch2 REQUIRED)
 # dukcpp-test
 
 add_executable(dukcpp-test
-  any.cpp
   common.cpp
   inheritance.cpp
   test.cpp
@@ -23,7 +22,7 @@ target_link_libraries(dukcpp-test
 )
 
 target_compile_features(dukcpp-test
-  PUBLIC
+  PRIVATE
     cxx_std_20
 )
 

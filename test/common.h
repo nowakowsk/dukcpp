@@ -1,6 +1,7 @@
 #ifndef DUKCPP_TEST_COMMON_H
 #define DUKCPP_TEST_COMMON_H
 
+#include <duk/class.h>
 #include <duk/type_adapter.h>
 #include <cmath>
 #include <memory>
@@ -16,6 +17,12 @@ template<typename T>
 struct type_adapter<std::shared_ptr<T>>
 {
   using type = T;
+
+  using base = std::conditional_t<
+    has_class_traits_base<T>,
+    std::shared_ptr<class_traits_base_t<T>>,
+    void
+  >;
 
   template<typename U>
   [[nodiscard]]
