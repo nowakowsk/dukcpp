@@ -36,6 +36,10 @@ concept boolean =
   std::is_same_v<std::decay_t<T>, bool>;
 
 
+namespace detail
+{
+
+
 template<typename T>
 [[nodiscard]]
 auto* make(duk_context* ctx, auto&&... args)
@@ -59,10 +63,6 @@ void free(duk_context* ctx, T* ptr)
 
   allocator<T>(ctx).deallocate(ptr, 1);
 }
-
-
-namespace detail
-{
 
 
 template<typename T>

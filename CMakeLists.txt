@@ -33,46 +33,21 @@ add_duktape_library(dukcpp-duktape "${DUKCPP_DUKTAPE_PATH}" ${DUKTAPE_OPTIONS})
 ###############################################################################
 # dukcpp
 
-add_library(${MODULE_NAME}
-  include/duk/detail/function_wrapper.h
-  include/duk/detail/memory_resource.h
-  include/duk/detail/type_traits.h
-  include/duk/allocator.h
-  include/duk/allocator_adapter.h
-  include/duk/callable.h
-  include/duk/class.h
-  include/duk/common.h
-  include/duk/context.h
-  include/duk/duk.h
-  include/duk/error.h
-  include/duk/function_handle.h
-  include/duk/function_helpers.h
-  include/duk/handle.h
-  include/duk/safe_handle.h
-  include/duk/scoped_pop.h
-  include/duk/std.h
-  include/duk/string_traits.h
-  include/duk/type_adapter.h
-  include/duk/type_id_static_ptr.h
-  include/duk/type_id_typeid.h
-  include/duk/type_traits_helpers.h
-
-  src/context.cpp
-)
+add_library(${MODULE_NAME} INTERFACE)
 
 target_include_directories(${MODULE_NAME}
-  PUBLIC
+  INTERFACE
     include
 )
 
 target_link_libraries(${MODULE_NAME}
-  PUBLIC
+  INTERFACE
     Boost::boost
     dukcpp-duktape # TODO: Try to remove it so users can use their custom Duktape config.
 )
 
 target_compile_features(${MODULE_NAME}
-  PUBLIC
+  INTERFACE
     cxx_std_20
 )
 

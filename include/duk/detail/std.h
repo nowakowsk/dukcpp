@@ -1,12 +1,12 @@
-#ifndef DUKCPP_STD_H
-#define DUKCPP_STD_H
+#ifndef DUKCPP_DETAIL_STD_H
+#define DUKCPP_DETAIL_STD_H
 
 #include <duk/allocator.h>
 #include <string>
 #include <utility>
 
 
-namespace duk
+namespace duk::detail
 {
 
 
@@ -25,7 +25,7 @@ string make_string(duk_context* ctx, Args&&... args)
 }
 
 
-} // namespace duk
+} // namespace duk::detail
 
 
-#endif // DUKCPP_STD_H
+#endif // DUKCPP_DETAIL_STD_H

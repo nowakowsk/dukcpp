@@ -74,7 +74,7 @@ private:
       if (!duk_put_prop_index(handle_.ctx, -2, OBJECT_IDX)) [[unlikely]]
         throw error(handle_.ctx, "handle corrupted");
 
-      duk_push_pointer(handle_.ctx, make<Info>(handle_.ctx));
+      duk_push_pointer(handle_.ctx, detail::make<Info>(handle_.ctx));
       if (!duk_put_prop_index(handle_.ctx, -2, INFO_IDX)) [[unlikely]]
         throw error(handle_.ctx, "handle corrupted");
 
@@ -116,7 +116,7 @@ private:
         if (!duk_del_prop_heapptr(handle_.ctx, -1, handle_.heap_ptr)) [[unlikely]]
           throw error(handle_.ctx, "handle corrupted");
 
-        free(handle_.ctx, info);
+        detail::free(handle_.ctx, info);
       }
     }
     else [[unlikely]]
