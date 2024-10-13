@@ -7,7 +7,7 @@ namespace duk
 
 
 // InhBase
-void* class_traits<InhBase>::prototype_heapptr(duk_context* ctx)
+void* class_traits<InhBase>::prototype_heapptr([[maybe_unused]] duk_context* ctx)
 {
   return prototype;
 }
@@ -16,7 +16,7 @@ void* class_traits<InhBase>::prototype = nullptr;
 
 
 // InhDer
-void* class_traits<InhDer>::prototype_heapptr(duk_context* ctx)
+void* class_traits<InhDer>::prototype_heapptr([[maybe_unused]] duk_context* ctx)
 {
   return prototype;
 }
@@ -25,7 +25,7 @@ void* class_traits<InhDer>::prototype = nullptr;
 
 
 // InhFinal
-void* class_traits<InhFinal>::prototype_heapptr(duk_context* ctx)
+void* class_traits<InhFinal>::prototype_heapptr([[maybe_unused]] duk_context* ctx)
 {
   return prototype;
 }

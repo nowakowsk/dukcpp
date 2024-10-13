@@ -35,7 +35,7 @@ public:
     auto self = static_cast<allocator_adapter*>(udata);
 
     auto ptr = self->allocator_.allocate(sizeof(BlockInfo) + size);
-    auto blockInfo = new (ptr) BlockInfo{size};
+    new (ptr) BlockInfo{size};
     
     return ptr + sizeof(BlockInfo);
   }

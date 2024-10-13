@@ -58,7 +58,7 @@ duk_size_t DebuggerContext::write(const char* buffer, duk_size_t size)
 }
 
 
-void DebuggerContext::detached(duk_context* ctx)
+void DebuggerContext::detached([[maybe_unused]] duk_context* ctx)
 {
   socket_.close();
 }

@@ -13,7 +13,7 @@ namespace
 {
 
 
-void errorHandler(void* udata, const char* message)
+void errorHandler([[maybe_unused]] void* udata, const char* message)
 {
   throw std::runtime_error(message);
 }

@@ -60,7 +60,7 @@ namespace duk
 {
 
 
-void* class_traits<Vector>::prototype_heapptr(duk_context* ctx)
+void* class_traits<Vector>::prototype_heapptr([[maybe_unused]] duk_context* ctx)
 {
   return prototype;
 }

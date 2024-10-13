@@ -289,7 +289,7 @@ struct type_traits<T>
 
       duk_ret_t result;
       if ((((result =
-        [&]()
+        [ctx, funcPtr]()
         {
           using ArgsTuple = boost::callable_traits::args_t<Signature>;
 
@@ -495,7 +495,7 @@ struct type_traits<void>
 {
   // push() is impossible. Not implemented.
 
-  static void pull(duk_context* ctx, duk_idx_t idx)
+  static void pull([[maybe_unused]] duk_context* ctx, [[maybe_unused]] duk_idx_t idx)
   {
     // Do nothing.
   }

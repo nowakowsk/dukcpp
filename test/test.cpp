@@ -14,7 +14,7 @@ struct DukCppTest
 {
   using Allocator = duk::allocator_adapter<>;
 
-  static void errorHandler(void* udata, const char* message)
+  static void errorHandler([[maybe_unused]] void* udata, const char* message)
   {
     throw std::runtime_error(message);
   }
