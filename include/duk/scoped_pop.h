@@ -11,13 +11,13 @@ namespace duk
 class scoped_pop final
 {
 public:
-  scoped_pop(duk_context* ctx, duk_idx_t count = 1) :
+  scoped_pop(duk_context* ctx, duk_idx_t count = 1) noexcept :
     ctx_(ctx),
     count_(count)
   {
   }
 
-  ~scoped_pop()
+  ~scoped_pop() noexcept
   {
     duk_pop_n(ctx_, count_);
   }
@@ -29,8 +29,8 @@ public:
   scoped_pop& operator=(scoped_pop&&) = delete;
 
 private:
-  duk_context* ctx_;
-  duk_idx_t count_;
+  duk_context* ctx_ = nullptr;
+  duk_idx_t count_ = 1;
 };
 
 

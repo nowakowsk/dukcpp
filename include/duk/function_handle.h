@@ -26,7 +26,7 @@ public:
   {
     using Result = boost::callable_traits::return_type_t<T>;
 
-    duk_push_heapptr(handle_.ctx, handle_.heap_ptr);
+    handle_.push();
     (push(handle_.ctx, std::forward<decltype(args)>(args)), ...);
     duk_call(handle_.ctx, sizeof...(args));
 

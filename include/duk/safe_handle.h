@@ -1,9 +1,11 @@
 #ifndef DUKCPP_SAFE_HANDLE_H
 #define DUKCPP_SAFE_HANDLE_H
 
+#include <duk/common.h>
 #include <duk/error.h>
 #include <duk/handle.h>
-#include <duktape.h>
+#include <duk/scoped_pop.h>
+#include <utility>
 
 
 namespace duk
@@ -14,30 +16,63 @@ namespace duk
 class safe_handle final
 {
 public:
-  safe_handle(const handle& handle) :
+  safe_handle() noexcept = default;
+
+  safe_handle(const handle& handle) noexcept :
     handle_(handle)
   {
     incRef();
   }
 
-  safe_handle(const safe_handle& other) :
+  safe_handle(const safe_handle& other) noexcept :
     handle_(other.handle_)
   {
     incRef();
   }
 
-  safe_handle(safe_handle&& other) :
+  safe_handle(safe_handle&& other) noexcept :
     handle_(std::move(other.handle_))
   {
   }
 
-  // TODO: Implement if needed.
-  safe_handle& operator=(const safe_handle&) = delete;
-  safe_handle& operator=(safe_handle&&) = delete;
+  safe_handle& operator=(const safe_handle& other) noexcept
+  {
+    if (&other != this)
+    {
+      decRef();
+      handle_ = other.handle_;
+      incRef();
+    }
 
-  ~safe_handle()
+    return *this;
+  }
+
+  safe_handle& operator=(safe_handle&& other) noexcept
+  {
+    if (&other != this)
+    {
+      decRef();
+      handle_ = std::move(other.handle_);
+    }
+
+    return *this;
+  }
+
+  ~safe_handle() noexcept
   {
     decRef();
+  }
+
+  [[nodiscard]]
+  bool operator==(const safe_handle& other) const noexcept
+  {
+    return handle_ == other.handle_;
+  }
+
+  [[nodiscard]]
+  bool operator!=(const safe_handle& other) const noexcept
+  {
+    return !operator==(other);
   }
 
   const handle& get() const noexcept
@@ -46,6 +81,8 @@ public:
   }
 
 private:
+  static constexpr duk_size_t heapPtrSize = sizeof(duk::handle::heap_ptr);
+
   enum PropertyIndex
   {
     INFO_IDX,
@@ -57,75 +94,72 @@ private:
     unsigned long long refCount = 1;
   };
 
-  void incRef()
+  void incRef() noexcept
   {
     if (handle_.empty())
       return;
 
-    duk_push_global_stash(handle_.ctx);
+    auto ctx = handle_.ctx;
 
-    if (!duk_get_prop_heapptr(handle_.ctx, -1, handle_.heap_ptr))
+    scoped_pop _(ctx); // duk_push_global_stash
+    duk_push_global_stash(ctx);
+
+    scoped_pop __(ctx); // duk_get_prop_heapptr
+    if (!duk_get_prop_lstring(ctx, -1, reinterpret_cast<const char*>(&handle_.heap_ptr), heapPtrSize))
     {
-      duk_pop(handle_.ctx); // Pop undefined.
+      // undefined on stack
 
-      duk_push_bare_array(handle_.ctx);
+      duk_push_bare_array(ctx);
 
-      duk_push_heapptr(handle_.ctx, handle_.heap_ptr);
-      if (!duk_put_prop_index(handle_.ctx, -2, OBJECT_IDX)) [[unlikely]]
-        throw error(handle_.ctx, "handle corrupted");
+      handle_.push();
+      if (!duk_put_prop_index(ctx, -2, OBJECT_IDX)) [[unlikely]]
+        duk_fatal(ctx, "handle corrupted (incRef, OBJECT_IDX)");
 
-      duk_push_pointer(handle_.ctx, detail::make<Info>(handle_.ctx));
-      if (!duk_put_prop_index(handle_.ctx, -2, INFO_IDX)) [[unlikely]]
-        throw error(handle_.ctx, "handle corrupted");
+      duk_push_pointer(ctx, detail::make<Info>(ctx));
+      if (!duk_put_prop_index(ctx, -2, INFO_IDX)) [[unlikely]]
+        duk_fatal(ctx, "handle corrupted (incRef, INFO_IDX)");
 
-      if (!duk_put_prop_heapptr(handle_.ctx, -2, handle_.heap_ptr)) [[unlikely]]
-        throw error(handle_.ctx, "handle corrupted");
+      if (!duk_put_prop_lstring(ctx, -3, reinterpret_cast<const char*>(&handle_.heap_ptr), heapPtrSize)) [[unlikely]]
+        duk_fatal(ctx, "handle corrupted (incRef, put object info)");
     }
     else
     {
-      if (!duk_get_prop_index(handle_.ctx, -1, INFO_IDX)) [[unlikely]]
-        throw error(handle_.ctx, "handle corrupted");
+      scoped_pop _(ctx); // duk_get_prop_index
+      if (!duk_get_prop_index(ctx, -1, INFO_IDX)) [[unlikely]]
+        duk_fatal(ctx, "handle corrupted (incRef, get object info)");
 
-      auto info = static_cast<Info*>(duk_get_pointer(handle_.ctx, -1));
+      auto info = static_cast<Info*>(duk_get_pointer(ctx, -1));
       ++info->refCount;
-
-      duk_pop_2(handle_.ctx);
     }
-
-    duk_pop(handle_.ctx); // Pop global stash.
   }
 
-  void decRef()
+  void decRef() noexcept
   {
     if (handle_.empty())
       return;
 
-    duk_push_global_stash(handle_.ctx);
+    auto ctx = handle_.ctx;
 
-    if (duk_get_prop_heapptr(handle_.ctx, -1, handle_.heap_ptr))
+    scoped_pop _(ctx); // duk_push_global_stash
+    duk_push_global_stash(ctx);
+
+    scoped_pop __(ctx); // duk_get_prop_heapptr
+    if (!duk_get_prop_lstring(ctx, -1, reinterpret_cast<const char*>(&handle_.heap_ptr), heapPtrSize))  [[unlikely]]
+      duk_fatal(ctx, "handle corrupted (decRef, get object info)");
+
+    scoped_pop ___(ctx); // duk_get_prop_index
+    if (!duk_get_prop_index(ctx, -1, INFO_IDX)) [[unlikely]]
+      duk_fatal(ctx, "handle corrupted (decRef, INFO_IDX)");
+
+    auto info = static_cast<Info*>(duk_get_pointer(ctx, -1));
+
+    if (--info->refCount == 0)
     {
-      if (!duk_get_prop_index(handle_.ctx, -1, INFO_IDX)) [[unlikely]]
-        throw error(handle_.ctx, "handle corrupted");
+      if (!duk_del_prop_lstring(ctx, -3, reinterpret_cast<const char*>(&handle_.heap_ptr), heapPtrSize)) [[unlikely]]
+        duk_fatal(ctx, "handle corrupted (decRef, del object info)");
 
-      auto info = static_cast<Info*>(duk_get_pointer(handle_.ctx, -1));
-
-      duk_pop_2(handle_.ctx);
-
-      if (--info->refCount == 0)
-      {
-        if (!duk_del_prop_heapptr(handle_.ctx, -1, handle_.heap_ptr)) [[unlikely]]
-          throw error(handle_.ctx, "handle corrupted");
-
-        detail::free(handle_.ctx, info);
-      }
+      detail::free(ctx, info);
     }
-    else [[unlikely]]
-    {
-      duk_pop(handle_.ctx); // Pop undefined.
-      throw error(handle_.ctx, "handle corrupted");
-    }
-
-    duk_pop(handle_.ctx); // Pop global stash.
   }
 
   handle handle_;

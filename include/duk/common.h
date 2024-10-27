@@ -66,11 +66,12 @@ void free(duk_context* ctx, T* ptr)
 
 
 template<typename T>
-struct DtorDeleter
+struct DtorDeleter final
 {
   void operator()(T* ptr) const
   {
-    ptr->~T();
+    if constexpr (std::is_destructible_v<T>)
+      ptr->~T();
   }
 };
 

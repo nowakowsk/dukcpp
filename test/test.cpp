@@ -5,9 +5,25 @@
 #include <duk/duk.h>
 #include <duk/callable_std_function.h>
 #include <catch2/catch_test_macros.hpp>
+#include <catch2/catch_template_test_macros.hpp>
 #include <cstring>
+#include <numeric>
 #include <stdexcept>
 #include <string>
+
+
+// Check if duk iterators and ranges conform to standard requirements of their categories.
+
+// NOTE: I don't think duk::array_input_iterator<T> really meets requirements of std::random_access_iterator, because
+//       return type of its operator[] isn't always convertible to a reference (this depends on T).
+static_assert(std::random_access_iterator<duk::array_input_iterator<int>>);
+static_assert(std::ranges::random_access_range<duk::array_input_range<int>>);
+
+static_assert(std::input_iterator<duk::symbol_input_iterator<int>>);
+static_assert(std::ranges::input_range<duk::symbol_input_range<int>>);
+
+static_assert(std::input_iterator<duk::input_iterator<int>>);
+static_assert(std::ranges::input_range<duk::input_range<int>>);
 
 
 struct DukCppTest
@@ -26,6 +42,12 @@ struct DukCppTest
 
   Allocator allocator_;
   duk::context ctx_;
+};
+
+
+template<typename T>
+struct DukCppTemplateTest : public DukCppTest
+{
 };
 
 
@@ -364,6 +386,114 @@ TEST_CASE_METHOD(DukCppTest, "Register function (function argument)")
 }
 
 
+TEST_CASE_METHOD(DukCppTest, "handle")
+{
+  duk::scoped_pop _(ctx_); // duk::push
+  duk::push<std::string>(ctx_, {});
+  auto heapPtr = duk_get_heapptr(ctx_, -1);
+
+  duk::handle h1;
+  REQUIRE(h1.ctx == nullptr);
+  REQUIRE(h1.heap_ptr == nullptr);
+
+  h1 = duk::handle(ctx_, heapPtr);
+  REQUIRE(h1.ctx == ctx_);
+  REQUIRE(h1.heap_ptr == heapPtr);
+
+  duk::handle h2(h1);
+  REQUIRE(h1.ctx == ctx_);
+  REQUIRE(h1.heap_ptr == heapPtr);
+  REQUIRE(h2.ctx == ctx_);
+  REQUIRE(h2.heap_ptr == heapPtr);
+
+  duk::handle h3(std::move(h1));
+  REQUIRE(h1.ctx == nullptr);
+  REQUIRE(h1.heap_ptr == nullptr);
+  REQUIRE(h3.ctx == ctx_);
+  REQUIRE(h3.heap_ptr == heapPtr);
+
+  h1 = h3;
+  REQUIRE(h1.ctx == ctx_);
+  REQUIRE(h1.heap_ptr == heapPtr);
+  REQUIRE(h3.ctx == ctx_);
+  REQUIRE(h3.heap_ptr == heapPtr);
+
+  h3 = std::move(h1);
+  REQUIRE(h1.ctx == nullptr);
+  REQUIRE(h1.heap_ptr == nullptr);
+  REQUIRE(h3.ctx == ctx_);
+  REQUIRE(h3.heap_ptr == heapPtr);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "safe_handle")
+{
+  const auto makeObject = [&](int id)
+  {
+    duk::scoped_pop _(ctx_); // duk_push_object
+    duk_push_object(ctx_);
+
+    duk_push_int(ctx_, id);
+    duk_put_prop_index(ctx_, -2, 0);
+
+    return duk::safe_handle(duk::handle(ctx_, -1));
+  };
+
+  static constexpr auto getObjectId = [](const duk::safe_handle& handle)
+  {
+    auto ctx = handle.get().ctx;
+
+    duk::scoped_pop _(ctx); // push
+    handle.get().push();
+
+    duk::scoped_pop __(ctx); // duk_get_prop_index
+    duk_get_prop_index(ctx, -1, 0);
+
+    return duk_get_int(ctx, -1);
+  };
+
+  auto h0 = makeObject(0);
+
+  duk::safe_handle h1;
+  REQUIRE(h1.get().ctx == nullptr);
+  REQUIRE(h1.get().heap_ptr == nullptr);
+
+  h1 = makeObject(1);
+  auto heapPtr = h1.get().heap_ptr;
+  REQUIRE(h1.get().ctx == ctx_);
+  REQUIRE(h1.get().heap_ptr == heapPtr);
+
+  duk::safe_handle h2(h1);
+  REQUIRE(h1.get().ctx == ctx_);
+  REQUIRE(h1.get().heap_ptr == heapPtr);
+  REQUIRE(h2.get().ctx == ctx_);
+  REQUIRE(h2.get().heap_ptr == heapPtr);
+
+  duk::safe_handle h3(std::move(h1));
+  REQUIRE(h1.get().ctx == nullptr);
+  REQUIRE(h1.get().heap_ptr == nullptr);
+  REQUIRE(h3.get().ctx == ctx_);
+  REQUIRE(h3.get().heap_ptr == heapPtr);
+
+  h1 = h3;
+  REQUIRE(h1.get().ctx == ctx_);
+  REQUIRE(h1.get().heap_ptr == heapPtr);
+  REQUIRE(h3.get().ctx == ctx_);
+  REQUIRE(h3.get().heap_ptr == heapPtr);
+
+  h3 = std::move(h1);
+  REQUIRE(h1.get().ctx == nullptr);
+  REQUIRE(h1.get().heap_ptr == nullptr);
+  REQUIRE(h3.get().ctx == ctx_);
+  REQUIRE(h3.get().heap_ptr == heapPtr);
+
+  duk_gc(ctx_, 0);
+
+  REQUIRE(getObjectId(h0) == 0);
+  REQUIRE(getObjectId(h3) == 1);
+}
+
+
 TEST_CASE_METHOD(DukCppTest, "Allocator")
 {
   using string = std::basic_string<char, std::char_traits<char>, duk::allocator<char>>;
@@ -475,13 +605,13 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
     duk_pop(ctx_);
   };
 
-  constexpr auto runMethodA = [](InhBase& obj) { return obj.methodA(); };
-  constexpr auto runMethodB = [](InhDer& obj) { return obj.methodB(); };
-  constexpr auto runMethodC = [](InhFinal& obj) { return obj.methodC(); };
+  static constexpr auto runMethodA = [](InhBase& obj) { return obj.methodA(); };
+  static constexpr auto runMethodB = [](InhDer& obj) { return obj.methodB(); };
+  static constexpr auto runMethodC = [](InhFinal& obj) { return obj.methodC(); };
 
-  constexpr auto runMethodPtrA = [](std::shared_ptr<InhBase> obj) { return obj->methodA(); };
-  constexpr auto runMethodPtrB = [](std::shared_ptr<InhDer> obj) { return obj->methodB(); };
-  constexpr auto runMethodPtrC = [](std::shared_ptr<InhFinal> obj) { return obj->methodC(); };
+  static constexpr auto runMethodPtrA = [](std::shared_ptr<InhBase> obj) { return obj->methodA(); };
+  static constexpr auto runMethodPtrB = [](std::shared_ptr<InhDer> obj) { return obj->methodB(); };
+  static constexpr auto runMethodPtrC = [](std::shared_ptr<InhFinal> obj) { return obj->methodC(); };
 
   duk_push_global_object(ctx_);
 
@@ -550,6 +680,180 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
   assertEq("runMethodC(final);", "FinalC");
 
   REQUIRE_THROWS(duk_eval_string(ctx_, "base.methodC();"));
+}
+
+
+TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Ranges (std::input_iterator)", "",
+  duk::array_input_range<int>,
+  duk::symbol_input_range<char>,
+  duk::input_range<int>,
+  duk::input_range<char>
+)
+{
+  const char* containerCode = nullptr;
+  if constexpr (std::is_same_v<decltype(*TestType{nullptr, 0}.begin()), int>)
+  {
+    containerCode = "([0, 1, 2, 3, 4]);";
+  }
+  else
+  {
+    containerCode = R"__(
+      var iterableObject = {
+        [Symbol.iterator]: function()
+        {
+          var n = -1;
+          var done = false;
+
+          return {
+            next: function()
+            {
+              n += 1;
+
+              if (n == 5)
+                done = true;
+
+              return { value: n, done: done };
+            }
+          };
+        }
+      };
+      (iterableObject);
+    )__";
+  }
+
+  duk_eval_string(DukCppTest::ctx_, containerCode);
+  auto range = duk::pull<TestType>(DukCppTest::ctx_, -1);
+
+  auto iter = range.begin();
+  REQUIRE(*iter == 0);
+
+  REQUIRE(*(++iter) == 1);
+
+  REQUIRE(*(iter++) == 1);
+  REQUIRE(*iter == 2);
+
+  REQUIRE(iter == iter);
+  REQUIRE(iter != range.end());
+
+  REQUIRE_THROWS_AS(*range.end(), duk::error);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Ranges (std::random_access_iterator)")
+{
+  duk_eval_string(ctx_, "([0, 1, 2, 3, 4]);");
+  auto range = duk::pull<duk::array_input_range<int>>(ctx_, -1);
+
+  auto iter = range.begin();
+
+  iter += 4;
+  REQUIRE(*iter == 4);
+
+  iter -= 2;
+  REQUIRE(*iter == 2);
+
+  REQUIRE(iter[-1] == 1);
+  REQUIRE(iter[1] == 3);
+
+  REQUIRE(*(iter - 1) == 1);
+  REQUIRE(*(iter + 1) == 3);
+  REQUIRE(*(1 + iter) == 3);
+
+  REQUIRE(range.begin() < iter);
+  REQUIRE(iter < range.end());
+  REQUIRE(iter > range.begin());
+  REQUIRE(iter >= range.begin());
+  REQUIRE(iter >= iter);
+  REQUIRE(iter <= range.end());
+  REQUIRE(iter <= iter);
+
+  REQUIRE(*(--iter) == 1);
+
+  REQUIRE(*(iter--) == 1);
+  REQUIRE(*iter == 0);
+
+  REQUIRE(range.end() - range.begin() == 5);
+  REQUIRE(range.begin() + 5 == range.end());
+  REQUIRE(range.end() - 5 == range.begin());
+
+  REQUIRE_THROWS_AS(*range.end(), duk::error);
+  REQUIRE_THROWS_AS(*(--range.begin()), duk::error);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
+{
+  duk_push_global_object(ctx_);
+
+  constexpr static auto sumRange = [](duk::input_range<int> r)
+  {
+    return std::accumulate(r.begin(), r.end(), 0);
+  };
+
+  static constexpr auto sumRanges = [](duk::input_range<int> r1, duk::input_range<int> r2)
+  {
+    std::string result;
+
+    for (auto iter1 = r1.begin(), iter2 = r2.begin(); iter1 != r1.end(); ++iter1, ++iter2)
+      result += std::to_string(*iter1 + *iter2) + " ";
+
+    return result;
+  };
+
+  duk::put_function<sumRange>(ctx_, -1, "sumRange");
+  duk::put_function<sumRanges>(ctx_, -1, "sumRanges");
+
+  duk_pop(ctx_); // Pop global object
+
+  SECTION("Array")
+  {
+    duk_eval_string(ctx_, R"__(
+      sumRange([1, 2, 3]);
+    )__");
+    REQUIRE(duk::pull<int>(ctx_, -1) == 6);
+    duk_pop(ctx_);
+
+    duk_eval_string(ctx_, R"__(
+      sumRanges([1, 2, 3], [10, 20, 30]);
+    )__");
+    REQUIRE(duk::pull<std::string>(ctx_, -1) == "11 22 33 ");
+    duk_pop(ctx_);
+  }
+
+  SECTION("Symbol.iterator")
+  {
+    duk_eval_string(ctx_, R"__(
+      var iterableObject = {
+        [Symbol.iterator]: function()
+        {
+          var n = 0;
+          var done = false;
+
+          return {
+            next: function()
+            {
+              n += 1;
+
+              if (n == 5)
+                done = true;
+
+              return { value: n, done: done };
+            }
+          };
+        }
+      };
+
+      sumRange(iterableObject);
+    )__");
+    REQUIRE(duk::pull<int>(ctx_, -1) == 10);
+    duk_pop(ctx_);
+
+    duk_eval_string(ctx_, R"__(
+      sumRanges(iterableObject, iterableObject);
+    )__");
+    REQUIRE(duk::pull<std::string>(ctx_, -1) == "2 4 6 8 ");
+    duk_pop(ctx_);
+  }
 }
 
 

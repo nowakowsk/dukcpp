@@ -9,7 +9,7 @@ namespace duk::detail
 {
 
 
-// TODO:
+// NOTE:
 // This memory_resource ignores alignment requirements, and is most likely invalid (see: LWG 2843).
 // Don't use it.
 

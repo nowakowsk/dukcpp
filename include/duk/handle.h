@@ -19,17 +19,21 @@ struct handle final
   {
   }
 
-  handle(duk_context* ctx, duk_idx_t idx) :
+  handle(duk_context* ctx, duk_idx_t idx) noexcept :
     ctx(ctx),
     heap_ptr(duk_get_heapptr(ctx, idx))
   {
   }
 
-  ~handle() = default;
+  ~handle() noexcept = default;
 
-  handle(const handle&) = default;
+  handle(const handle& other) noexcept :
+    ctx(other.ctx),
+    heap_ptr(other.heap_ptr)
+  {
+  }
 
-  handle(handle&& other) :
+  handle(handle&& other) noexcept :
     ctx(other.ctx),
     heap_ptr(other.heap_ptr)
   {
@@ -37,9 +41,18 @@ struct handle final
     other.heap_ptr = nullptr;
   }
 
-  handle& operator=(const handle&) = default;
+  handle& operator=(const handle& other) noexcept
+  {
+    if (&other != this)
+    {
+      ctx = other.ctx;
+      heap_ptr = other.heap_ptr;
+    }
 
-  handle& operator=(handle&& other)
+    return *this;
+  }
+
+  handle& operator=(handle&& other) noexcept
   {
     if (&other != this)
     {
@@ -54,9 +67,27 @@ struct handle final
   }
 
   [[nodiscard]]
+  bool operator==(const handle& other) const noexcept
+  {
+    return ctx == other.ctx &&
+           heap_ptr == other.heap_ptr;
+  }
+
+  [[nodiscard]]
+  bool operator!=(const handle& other) const noexcept
+  {
+    return !operator==(other);
+  }
+
+  [[nodiscard]]
   bool empty() const noexcept
   {
     return !ctx || !heap_ptr;
+  }
+
+  void push() const noexcept
+  {
+    duk_push_heapptr(ctx, heap_ptr);
   }
 
   duk_context* ctx = nullptr;

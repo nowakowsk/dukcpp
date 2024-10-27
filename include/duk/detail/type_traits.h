@@ -5,6 +5,7 @@
 #include <duk/common.h>
 #include <duk/error.h>
 #include <duk/function_handle.h>
+#include <duk/range.h>
 #include <duk/string_traits.h>
 #include <duk/type_adapter.h>
 
@@ -256,6 +257,57 @@ struct type_traits
     duk_pop(ctx);
 
     return objInfo->checkType(type_id<DecayT>());
+  }
+};
+
+
+template<typename T>
+struct type_traits<array_input_range<T>>
+{
+  [[nodiscard]]
+  static array_input_range<T> pull(duk_context* ctx, duk_idx_t idx)
+  {
+    return { ctx, idx };
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  {
+    return duk_is_array(ctx, idx);
+  }
+};
+
+
+template<typename T>
+struct type_traits<symbol_input_range<T>>
+{
+  [[nodiscard]]
+  static symbol_input_range<T> pull(duk_context* ctx, duk_idx_t idx)
+  {
+    return { ctx, idx };
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  {
+    return duk_is_object(ctx, idx);
+  }
+};
+
+
+template<typename T>
+struct type_traits<input_range<T>>
+{
+  [[nodiscard]]
+  static input_range<T> pull(duk_context* ctx, duk_idx_t idx)
+  {
+    return { ctx, idx };
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  {
+    return duk_is_array(ctx, idx) || duk_is_object(ctx, idx);
   }
 };
 
