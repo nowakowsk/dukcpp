@@ -38,7 +38,7 @@ namespace duk
 template<>
 struct class_traits<InhBase>
 {
-  static void* prototype_heapptr(duk_context* ctx);
+  static void* prototype_heap_ptr(duk_context* ctx);
 
   static void* prototype;
 };
@@ -49,7 +49,7 @@ struct class_traits<InhDer>
 {
   using base = InhBase;
 
-  static void* prototype_heapptr(duk_context* ctx);
+  static void* prototype_heap_ptr(duk_context* ctx);
 
   static void* prototype;
 };
@@ -60,7 +60,7 @@ struct class_traits<InhFinal>
 {
   using base = InhDer;
 
-  static void* prototype_heapptr(duk_context* ctx);
+  static void* prototype_heap_ptr(duk_context* ctx);
 
   static void* prototype;
 };

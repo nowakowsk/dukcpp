@@ -18,7 +18,7 @@ struct class_traits;
 template<typename T>
 concept has_class_traits_prototype = requires(duk_context* ctx)
 {
-  { class_traits<T>::prototype_heapptr(ctx) } -> std::same_as<void*>;
+  { class_traits<T>::prototype_heap_ptr(ctx) } -> std::same_as<void*>;
 };
 
 

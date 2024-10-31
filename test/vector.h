@@ -32,7 +32,7 @@ namespace duk
 template<>
 struct class_traits<Vector>
 {
-  static void* prototype_heapptr(duk_context* ctx);
+  static void* prototype_heap_ptr(duk_context* ctx);
 
   static void* prototype;
 };

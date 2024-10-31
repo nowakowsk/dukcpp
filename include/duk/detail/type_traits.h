@@ -184,7 +184,7 @@ struct type_traits
 
   using DecayT = std::decay_t<T>;
 
-  static void push(duk_context* ctx, auto&& obj, void* prototype_heapptr = nullptr)
+  static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
   {
     using ObjectInfoImplT = ObjectInfoImpl<DecayT>;
 
@@ -218,13 +218,13 @@ struct type_traits
 
     if constexpr (has_class_traits_prototype<AdaptedT>)
     {
-      if (!prototype_heapptr)
-        prototype_heapptr = class_traits<AdaptedT>::prototype_heapptr(ctx);
+      if (!prototype_heap_ptr)
+        prototype_heap_ptr = class_traits<AdaptedT>::prototype_heap_ptr(ctx);
     }
 
-    if (prototype_heapptr)
+    if (prototype_heap_ptr)
     {
-      duk_push_heapptr(ctx, prototype_heapptr);
+      duk_push_heapptr(ctx, prototype_heap_ptr);
       duk_set_prototype(ctx, -2);
     }
   }
@@ -261,11 +261,11 @@ struct type_traits
 };
 
 
-template<typename T>
-struct type_traits<array_input_range<T>>
+template<typename ...Ts>
+struct type_traits<array_input_range<Ts...>>
 {
   [[nodiscard]]
-  static array_input_range<T> pull(duk_context* ctx, duk_idx_t idx)
+  static array_input_range<Ts...> pull(duk_context* ctx, duk_idx_t idx)
   {
     return { ctx, idx };
   }
@@ -278,11 +278,11 @@ struct type_traits<array_input_range<T>>
 };
 
 
-template<typename T>
-struct type_traits<symbol_input_range<T>>
+template<typename ...Ts>
+struct type_traits<symbol_input_range<Ts...>>
 {
   [[nodiscard]]
-  static symbol_input_range<T> pull(duk_context* ctx, duk_idx_t idx)
+  static symbol_input_range<Ts...> pull(duk_context* ctx, duk_idx_t idx)
   {
     return { ctx, idx };
   }
@@ -295,11 +295,11 @@ struct type_traits<symbol_input_range<T>>
 };
 
 
-template<typename T>
-struct type_traits<input_range<T>>
+template<typename ...Ts>
+struct type_traits<input_range<Ts...>>
 {
   [[nodiscard]]
-  static input_range<T> pull(duk_context* ctx, duk_idx_t idx)
+  static input_range<Ts...> pull(duk_context* ctx, duk_idx_t idx)
   {
     return { ctx, idx };
   }

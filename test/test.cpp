@@ -26,6 +26,12 @@ static_assert(std::input_iterator<duk::input_iterator<int>>);
 static_assert(std::ranges::input_range<duk::input_range<int>>);
 
 
+// Check if handles match duk::handle_type concept.
+
+static_assert(duk::handle_type<duk::handle>);
+static_assert(duk::handle_type<duk::safe_handle>);
+
+
 struct DukCppTest
 {
   using Allocator = duk::allocator_adapter<>;
@@ -393,36 +399,36 @@ TEST_CASE_METHOD(DukCppTest, "handle")
   auto heapPtr = duk_get_heapptr(ctx_, -1);
 
   duk::handle h1;
-  REQUIRE(h1.ctx == nullptr);
-  REQUIRE(h1.heap_ptr == nullptr);
+  REQUIRE(h1.ctx() == nullptr);
+  REQUIRE(h1.heap_ptr() == nullptr);
 
   h1 = duk::handle(ctx_, heapPtr);
-  REQUIRE(h1.ctx == ctx_);
-  REQUIRE(h1.heap_ptr == heapPtr);
+  REQUIRE(h1.ctx() == ctx_);
+  REQUIRE(h1.heap_ptr() == heapPtr);
 
   duk::handle h2(h1);
-  REQUIRE(h1.ctx == ctx_);
-  REQUIRE(h1.heap_ptr == heapPtr);
-  REQUIRE(h2.ctx == ctx_);
-  REQUIRE(h2.heap_ptr == heapPtr);
+  REQUIRE(h1.ctx() == ctx_);
+  REQUIRE(h1.heap_ptr() == heapPtr);
+  REQUIRE(h2.ctx() == ctx_);
+  REQUIRE(h2.heap_ptr() == heapPtr);
 
   duk::handle h3(std::move(h1));
-  REQUIRE(h1.ctx == nullptr);
-  REQUIRE(h1.heap_ptr == nullptr);
-  REQUIRE(h3.ctx == ctx_);
-  REQUIRE(h3.heap_ptr == heapPtr);
+  REQUIRE(h1.ctx() == nullptr);
+  REQUIRE(h1.heap_ptr() == nullptr);
+  REQUIRE(h3.ctx() == ctx_);
+  REQUIRE(h3.heap_ptr() == heapPtr);
 
   h1 = h3;
-  REQUIRE(h1.ctx == ctx_);
-  REQUIRE(h1.heap_ptr == heapPtr);
-  REQUIRE(h3.ctx == ctx_);
-  REQUIRE(h3.heap_ptr == heapPtr);
+  REQUIRE(h1.ctx() == ctx_);
+  REQUIRE(h1.heap_ptr() == heapPtr);
+  REQUIRE(h3.ctx() == ctx_);
+  REQUIRE(h3.heap_ptr() == heapPtr);
 
   h3 = std::move(h1);
-  REQUIRE(h1.ctx == nullptr);
-  REQUIRE(h1.heap_ptr == nullptr);
-  REQUIRE(h3.ctx == ctx_);
-  REQUIRE(h3.heap_ptr == heapPtr);
+  REQUIRE(h1.ctx() == nullptr);
+  REQUIRE(h1.heap_ptr() == nullptr);
+  REQUIRE(h3.ctx() == ctx_);
+  REQUIRE(h3.heap_ptr() == heapPtr);
 }
 
 
@@ -441,10 +447,10 @@ TEST_CASE_METHOD(DukCppTest, "safe_handle")
 
   static constexpr auto getObjectId = [](const duk::safe_handle& handle)
   {
-    auto ctx = handle.get().ctx;
+    auto ctx = handle.ctx();
 
-    duk::scoped_pop _(ctx); // push
-    handle.get().push();
+    duk::scoped_pop _(ctx); // push_handle
+    push_handle(handle);
 
     duk::scoped_pop __(ctx); // duk_get_prop_index
     duk_get_prop_index(ctx, -1, 0);
@@ -455,37 +461,37 @@ TEST_CASE_METHOD(DukCppTest, "safe_handle")
   auto h0 = makeObject(0);
 
   duk::safe_handle h1;
-  REQUIRE(h1.get().ctx == nullptr);
-  REQUIRE(h1.get().heap_ptr == nullptr);
+  REQUIRE(h1.ctx() == nullptr);
+  REQUIRE(h1.heap_ptr() == nullptr);
 
   h1 = makeObject(1);
-  auto heapPtr = h1.get().heap_ptr;
-  REQUIRE(h1.get().ctx == ctx_);
-  REQUIRE(h1.get().heap_ptr == heapPtr);
+  auto heapPtr = h1.heap_ptr();
+  REQUIRE(h1.ctx() == ctx_);
+  REQUIRE(h1.heap_ptr() == heapPtr);
 
   duk::safe_handle h2(h1);
-  REQUIRE(h1.get().ctx == ctx_);
-  REQUIRE(h1.get().heap_ptr == heapPtr);
-  REQUIRE(h2.get().ctx == ctx_);
-  REQUIRE(h2.get().heap_ptr == heapPtr);
+  REQUIRE(h1.ctx() == ctx_);
+  REQUIRE(h1.heap_ptr() == heapPtr);
+  REQUIRE(h2.ctx() == ctx_);
+  REQUIRE(h2.heap_ptr() == heapPtr);
 
   duk::safe_handle h3(std::move(h1));
-  REQUIRE(h1.get().ctx == nullptr);
-  REQUIRE(h1.get().heap_ptr == nullptr);
-  REQUIRE(h3.get().ctx == ctx_);
-  REQUIRE(h3.get().heap_ptr == heapPtr);
+  REQUIRE(h1.ctx() == nullptr);
+  REQUIRE(h1.heap_ptr() == nullptr);
+  REQUIRE(h3.ctx() == ctx_);
+  REQUIRE(h3.heap_ptr() == heapPtr);
 
   h1 = h3;
-  REQUIRE(h1.get().ctx == ctx_);
-  REQUIRE(h1.get().heap_ptr == heapPtr);
-  REQUIRE(h3.get().ctx == ctx_);
-  REQUIRE(h3.get().heap_ptr == heapPtr);
+  REQUIRE(h1.ctx() == ctx_);
+  REQUIRE(h1.heap_ptr() == heapPtr);
+  REQUIRE(h3.ctx() == ctx_);
+  REQUIRE(h3.heap_ptr() == heapPtr);
 
   h3 = std::move(h1);
-  REQUIRE(h1.get().ctx == nullptr);
-  REQUIRE(h1.get().heap_ptr == nullptr);
-  REQUIRE(h3.get().ctx == ctx_);
-  REQUIRE(h3.get().heap_ptr == heapPtr);
+  REQUIRE(h1.ctx() == nullptr);
+  REQUIRE(h1.heap_ptr() == nullptr);
+  REQUIRE(h3.ctx() == ctx_);
+  REQUIRE(h3.heap_ptr() == heapPtr);
 
   duk_gc(ctx_, 0);
 
@@ -519,7 +525,7 @@ TEST_CASE_METHOD(DukCppTest, "Safe handle (function)")
 
   duk_gc(ctx_, 0);
 
-  auto func = duk::function_handle<int()>(funcHandle.get());
+  auto func = duk::safe_function_handle<int()>(funcHandle);
 
   REQUIRE(func() == 123);
 }
@@ -684,14 +690,14 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
 
 
 TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Ranges (std::input_iterator)", "",
-  duk::array_input_range<int>,
-  duk::symbol_input_range<char>,
-  duk::input_range<int>,
-  duk::input_range<char>
+  duk::safe_array_input_range<int>,
+  duk::safe_symbol_input_range<char>,
+  duk::safe_input_range<int>,
+  duk::safe_input_range<char>
 )
 {
   const char* containerCode = nullptr;
-  if constexpr (std::is_same_v<decltype(*TestType{nullptr, 0}.begin()), int>)
+  if constexpr (std::is_same_v<decltype(*std::declval<TestType>().begin()), int>)
   {
     containerCode = "([0, 1, 2, 3, 4]);";
   }
@@ -742,7 +748,7 @@ TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Ranges (std::input_iterator)", ""
 TEST_CASE_METHOD(DukCppTest, "Ranges (std::random_access_iterator)")
 {
   duk_eval_string(ctx_, "([0, 1, 2, 3, 4]);");
-  auto range = duk::pull<duk::array_input_range<int>>(ctx_, -1);
+  auto range = duk::pull<duk::safe_array_input_range<int>>(ctx_, -1);
 
   auto iter = range.begin();
 
@@ -785,12 +791,12 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
 {
   duk_push_global_object(ctx_);
 
-  constexpr static auto sumRange = [](duk::input_range<int> r)
+  constexpr static auto sumRange = [](duk::safe_input_range<int> r)
   {
     return std::accumulate(r.begin(), r.end(), 0);
   };
 
-  static constexpr auto sumRanges = [](duk::input_range<int> r1, duk::input_range<int> r2)
+  static constexpr auto sumRanges = [](duk::safe_input_range<int> r1, duk::safe_input_range<int> r2)
   {
     std::string result;
 

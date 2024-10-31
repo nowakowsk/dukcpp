@@ -22,11 +22,11 @@ struct type_traits;
 } // namespace detail
 
 
-template<typename T>
+template<typename T, handle_type Handle>
 class array_input_range;
 
 
-template<typename T>
+template<typename T, handle_type Handle = handle>
 class array_input_iterator final
 {
 public:
@@ -118,13 +118,13 @@ public:
 
   decltype(auto) operator[](difference_type n) const
   {
-    auto ctx = arrayHandle_.get().ctx;
+    auto ctx = arrayHandle_.ctx();
 
-    if (arrayHandle_.get().empty()) [[unlikely]]
+    if (arrayHandle_.empty()) [[unlikely]]
       throw error(ctx, "invalid symbol iterator dereference (uninitialized)");
 
-    scoped_pop _(ctx); // push
-    arrayHandle_.get().push();
+    scoped_pop _(ctx); // push_handle
+    push_handle(arrayHandle_);
 
     scoped_pop __(ctx); // duk_get_prop_index
     if (!duk_get_prop_index(ctx, -1, arrayIdx_ + n)) [[unlikely]]
@@ -158,20 +158,24 @@ public:
   }
 
 private:
-  friend class array_input_range<T>;
+  friend class array_input_range<T, Handle>;
 
-  array_input_iterator(const safe_handle& arrayHandle, duk_uarridx_t arrayIdx) noexcept :
+  array_input_iterator(const Handle& arrayHandle, duk_uarridx_t arrayIdx) noexcept :
     arrayHandle_(arrayHandle),
     arrayIdx_(arrayIdx)
   {
   }
 
-  safe_handle arrayHandle_;
+  Handle arrayHandle_;
   duk_uarridx_t arrayIdx_ = 0;
 };
 
 
 template<typename T>
+using safe_array_input_iterator = array_input_iterator<T, safe_handle>;
+
+
+template<typename T, handle_type Handle = handle>
 class array_input_range final
 {
 public:
@@ -181,32 +185,36 @@ public:
   }
 
   [[nodiscard]]
-  array_input_iterator<T> begin() const
+  array_input_iterator<T, Handle> begin() const
   {
     return { arrayHandle_, 0 };
   }
 
   [[nodiscard]]
-  array_input_iterator<T> end() const
+  array_input_iterator<T, Handle> end() const
   {
-    auto ctx = arrayHandle_.get().ctx;
+    auto ctx = arrayHandle_.ctx();
 
-    scoped_pop _(ctx); // push
-    arrayHandle_.get().push();
+    scoped_pop _(ctx); // push_handle
+    push_handle(arrayHandle_);
 
     return { arrayHandle_, static_cast<duk_uarridx_t>(duk_get_length(ctx, -1)) };
   }
 
 private:
-  safe_handle arrayHandle_;
+  Handle arrayHandle_;
 };
 
 
 template<typename T>
+using safe_array_input_range = array_input_range<T, safe_handle>;
+
+
+template<typename T, handle_type Handle>
 class symbol_input_range;
 
 
-template<typename T>
+template<typename T, handle_type Handle = handle>
 class symbol_input_iterator final
 {
 public:
@@ -221,16 +229,16 @@ public:
   [[nodiscard]]
   decltype(auto) operator*() const
   {
-    auto ctx = containerHandle_.get().ctx;
+    auto ctx = containerHandle_.ctx();
 
     if (end_) [[unlikely]]
       throw error(ctx, "invalid symbol iterator dereference (out of range)");
 
-    if (currHandle_.get().empty()) [[unlikely]]
+    if (currHandle_.empty()) [[unlikely]]
       throw error(ctx, "invalid symbol iterator dereference (uninitialized)");
 
-    scoped_pop _(ctx); // push
-    currHandle_.get().push();
+    scoped_pop _(ctx); // push_handle
+    push_handle(currHandle_);
 
     scoped_pop __(ctx); // duk_get_prop_string
     if (!duk_get_prop_literal(ctx, -1, "value")) [[unlikely]]
@@ -269,15 +277,15 @@ public:
   }
 
 private:
-  friend class symbol_input_range<T>;
+  friend class symbol_input_range<T, Handle>;
 
-  symbol_input_iterator(const safe_handle& containerHandle) noexcept :
+  symbol_input_iterator(const Handle& containerHandle) noexcept :
     containerHandle_(containerHandle),
     end_(true)
   {
   }
 
-  symbol_input_iterator(const safe_handle& containerHandle, const safe_handle& iteratorHandle) :
+  symbol_input_iterator(const Handle& containerHandle, const Handle& iteratorHandle) :
     containerHandle_(containerHandle),
     iteratorHandle_(iteratorHandle),
     end_(false)
@@ -290,10 +298,10 @@ private:
     if (end_) [[unlikely]]
       return;
 
-    auto ctx = iteratorHandle_.get().ctx;
+    auto ctx = iteratorHandle_.ctx();
 
-    scoped_pop _(ctx); // push
-    iteratorHandle_.get().push();
+    scoped_pop _(ctx); // push_handle
+    push_handle(iteratorHandle_);
 
     duk_push_string(ctx, "next");
 
@@ -310,14 +318,18 @@ private:
       end_ = duk_get_boolean(ctx, -1);
   }
 
-  safe_handle containerHandle_;
-  safe_handle iteratorHandle_;
-  safe_handle currHandle_;
+  Handle containerHandle_;
+  Handle iteratorHandle_;
+  Handle currHandle_;
   bool end_ = true;
 };
 
 
 template<typename T>
+using safe_symbol_input_iterator = symbol_input_iterator<T, safe_handle>;
+
+
+template<typename T, handle_type Handle = handle>
 class symbol_input_range final
 {
 public:
@@ -327,12 +339,12 @@ public:
   }
 
   [[nodiscard]]
-  symbol_input_iterator<T> begin() const
+  symbol_input_iterator<T, Handle> begin() const
   {
-    auto ctx = containerHandle_.get().ctx;
+    auto ctx = containerHandle_.ctx();
 
-    scoped_pop _(ctx); // push
-    containerHandle_.get().push();
+    scoped_pop _(ctx); // push_handle
+    push_handle(containerHandle_);
 
     duk_push_string(ctx, DUK_WELLKNOWN_SYMBOL("Symbol.iterator"));
 
@@ -343,21 +355,25 @@ public:
   }
 
   [[nodiscard]]
-  symbol_input_iterator<T> end() const
+  symbol_input_iterator<T, Handle> end() const
   {
     return { containerHandle_ };
   }
 
 private:
-  safe_handle containerHandle_;
+  Handle containerHandle_;
 };
 
 
 template<typename T>
+using safe_symbol_input_range = symbol_input_range<T, safe_handle>;
+
+
+template<typename T, handle_type Handle>
 class input_range;
 
 
-template<typename T>
+template<typename T, handle_type Handle = handle>
 class input_iterator final
 {
 public:
@@ -404,11 +420,11 @@ public:
   }
 
 private:
-  friend class input_range<T>;
+  friend class input_range<T, Handle>;
 
   using input_iterator_impl = std::variant<
-    array_input_iterator<T>,
-    symbol_input_iterator<T>
+    array_input_iterator<T, Handle>,
+    symbol_input_iterator<T, Handle>
   >;
 
   input_iterator(input_iterator_impl impl) :
@@ -421,12 +437,16 @@ private:
 
 
 template<typename T>
+using safe_input_iterator = input_iterator<T, safe_handle>;
+
+
+template<typename T, handle_type Handle = handle>
 class input_range final
 {
 private:
   using input_range_impl = std::variant<
-    array_input_range<T>,
-    symbol_input_range<T>
+    array_input_range<T, Handle>,
+    symbol_input_range<T, Handle>
   >;
 
 public:
@@ -435,33 +455,33 @@ public:
       [&]() -> input_range_impl
       {
         if(duk_is_array(ctx, idx))
-          return array_input_range<T>(ctx, idx);
+          return array_input_range<T, Handle>(ctx, idx);
         else
-          return symbol_input_range<T>(ctx, idx);
+          return symbol_input_range<T, Handle>(ctx, idx);
       }()
     )
   {
   }
 
   [[nodiscard]]
-  input_iterator<T> begin() const
+  input_iterator<T, Handle> begin() const
   {
     return std::visit(
       [](auto&& range)
       {
-        return typename input_iterator<T>::input_iterator_impl(range.begin());
+        return typename input_iterator<T, Handle>::input_iterator_impl(range.begin());
       },
       impl_
     );
   }
 
   [[nodiscard]]
-  input_iterator<T> end() const
+  input_iterator<T, Handle> end() const
   {
     return std::visit(
       [](auto&& range)
       {
-        return typename input_iterator<T>::input_iterator_impl(range.end());
+        return typename input_iterator<T, Handle>::input_iterator_impl(range.end());
       },
       impl_
     );
@@ -470,6 +490,10 @@ public:
 private:
   input_range_impl impl_;
 };
+
+
+template<typename T>
+using safe_input_range = input_range<T, safe_handle>;
 
 
 } // namespace duk

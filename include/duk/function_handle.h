@@ -3,6 +3,7 @@
 
 #include <duk/common.h>
 #include <duk/handle.h>
+#include <duk/safe_handle.h>
 #include <duk/scoped_pop.h>
 #include <duk/type_traits_helpers.h>
 #include <duktape.h>
@@ -13,11 +14,11 @@ namespace duk
 
 
 // Non-owning handle to Duktape function.
-template<typename T>
+template<typename T, typename Handle = handle>
 class function_handle
 {
 public:
-  function_handle(const handle& handle) :
+  function_handle(const Handle& handle) :
     handle_(handle)
   {
   }
@@ -26,22 +27,27 @@ public:
   {
     using Result = boost::callable_traits::return_type_t<T>;
 
-    handle_.push();
-    (push(handle_.ctx, std::forward<decltype(args)>(args)), ...);
-    duk_call(handle_.ctx, sizeof...(args));
+    push_handle(handle_);
+    (push(handle_.ctx(), std::forward<decltype(args)>(args)), ...);
 
-    scoped_pop _(handle_.ctx); // Pop return value.
+    scoped_pop _(handle_.ctx()); // duk_call
+    duk_call(handle_.ctx(), sizeof...(args));
 
-    return safe_pull<Result>(handle_.ctx, -1);
+    return safe_pull<Result>(handle_.ctx(), -1);
   }
 
 private:
-  handle handle_;
+  Handle handle_;
 };
 
 
+// Owning handle to Duktape function.
 template<typename T>
-struct callable_traits<function_handle<T>>
+using safe_function_handle = function_handle<T, safe_handle>;
+
+
+template<typename T, typename ...Ts>
+struct callable_traits<function_handle<T, Ts...>>
 {
   using type = T;
 };
