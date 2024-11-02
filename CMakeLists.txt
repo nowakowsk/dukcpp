@@ -39,35 +39,28 @@ list(APPEND DUKCPP_INSTALL_TARGETS ${MODULE_NAME})
 
 
 ###############################################################################
-# dukcpp-duktape
-#
-# This target is used only by tests. It won't be exported. Users are expected to bring their own Duktape library.
-# They can generate one with add_duktape_library() macro.
-
-include(cmake/duktape.cmake)
+# Tests and tools
 
 set(DUKCPP_DUKTAPE_PATH "" CACHE PATH "Path to Duktape source code directory")
 if(DUKCPP_DUKTAPE_PATH STREQUAL "")
-  message(FATAL_ERROR "Path to Duktape source code directory is not set (DUKCPP_DUKTAPE_PATH).")
+  message(WARNING "Path to Duktape source code directory (DUKCPP_DUKTAPE_PATH) is not set. Tests and tools disabled.")
+else()
+  include(cmake/duktape.cmake)
+
+  add_duktape_library(dukcpp-duktape "${DUKCPP_DUKTAPE_PATH}"
+    -DDUK_USE_FATAL_HANDLER
+    -DDUK_USE_CPP_EXCEPTIONS
+    -DDUK_USE_SYMBOL_BUILTIN
+    -DDUK_USE_VOLUNTARY_GC
+
+    -DDUK_USE_INTERRUPT_COUNTER
+    -DDUK_USE_DEBUGGER_SUPPORT
+    -DDUK_USE_DEBUGGER_INSPECT
+  )
+
+  add_subdirectory(duk)
+  add_subdirectory(test)
 endif()
-
-add_duktape_library(dukcpp-duktape "${DUKCPP_DUKTAPE_PATH}"
-  -DDUK_USE_FATAL_HANDLER
-  -DDUK_USE_CPP_EXCEPTIONS
-  -DDUK_USE_SYMBOL_BUILTIN
-  -DDUK_USE_VOLUNTARY_GC
-
-  -DDUK_USE_INTERRUPT_COUNTER
-  -DDUK_USE_DEBUGGER_SUPPORT
-  -DDUK_USE_DEBUGGER_INSPECT
-)
-
-
-###############################################################################
-# Tests and tools
-
-add_subdirectory(duk)
-add_subdirectory(test)
 
 
 ###############################################################################
