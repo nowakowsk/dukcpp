@@ -1,5 +1,6 @@
 find_package(Python2 REQUIRED)
 
+
 function(add_duktape_library TARGET_NAME DUKTAPE_PATH)
   set(OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/${TARGET_NAME}")
   set(OUTPUT_FILE "${OUTPUT_DIR}/duktape.c")
@@ -25,7 +26,6 @@ function(add_duktape_library TARGET_NAME DUKTAPE_PATH)
     endif()
   endforeach()
   
-  # This should be configurable.
   set_source_files_properties("${OUTPUT_FILE}"
     PROPERTIES
       LANGUAGE CXX
