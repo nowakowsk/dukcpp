@@ -18,6 +18,7 @@
 #include <duk/type_traits_helpers.h>
 #include <duk/function_handle.h>
 #include <duk/function_helpers.h>
+#include <duk/property_helpers.h>
 #include <duk/safe_handle.h>
 
 #endif // DUKCPP_DUK_H

@@ -38,14 +38,11 @@ struct class_traits_base
   using type = void; // TODO: See if this can be removed.
 };
 
-
-template<typename T>
-requires has_class_traits_base<T>
+template<has_class_traits_base T>
 struct class_traits_base<T>
 {
   using type = class_traits<T>::base;
 };
-
 
 template<typename T>
 using class_traits_base_t = typename class_traits_base<T>::type;

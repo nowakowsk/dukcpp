@@ -33,7 +33,7 @@ public:
     scoped_pop _(handle_.ctx()); // duk_call
     duk_call(handle_.ctx(), sizeof...(args));
 
-    return safe_pull<Result>(handle_.ctx(), -1);
+    return safe_get<Result>(handle_.ctx(), -1);
   }
 
 private:

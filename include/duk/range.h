@@ -130,7 +130,7 @@ public:
     if (!duk_get_prop_index(ctx, -1, arrayIdx_ + n)) [[unlikely]]
       throw error(ctx, "invalid array iterator dereference (out of range)");
 
-    return detail::type_traits<T>::pull(ctx, -1);
+    return detail::type_traits<T>::get(ctx, -1);
   }
 
   // NOTE: In theory, operator== and != should be covered by <=>, but removing explicit definitions trips static_assert
@@ -244,7 +244,7 @@ public:
     if (!duk_get_prop_literal(ctx, -1, "value")) [[unlikely]]
       throw error(ctx, "invalid symbol iterator dereference ('value' property missing)");
 
-    return detail::type_traits<T>::pull(ctx, -1);
+    return detail::type_traits<T>::get(ctx, -1);
   }
 
   symbol_input_iterator& operator++()

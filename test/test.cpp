@@ -12,10 +12,14 @@
 #include <string>
 
 
-// Check if duk iterators and ranges conform to standard requirements of their categories.
+// TODO: Make tests for changes.
 
-// NOTE: I don't think duk::array_input_iterator<T> really meets requirements of std::random_access_iterator, because
-//       return type of its operator[] isn't always convertible to a reference (this depends on T).
+
+// Check if iterators and ranges conform to standard requirements of their categories.
+//
+// NOTE:
+// I don't think duk::array_input_iterator<T> really meets requirements of std::random_access_iterator, because
+// return type of its operator[] isn't always convertible to a reference (this depends on T).
 static_assert(std::random_access_iterator<duk::array_input_iterator<int>>);
 static_assert(std::ranges::random_access_range<duk::array_input_range<int>>);
 
@@ -30,6 +34,12 @@ static_assert(std::ranges::input_range<duk::input_range<int>>);
 
 static_assert(duk::handle_type<duk::handle>);
 static_assert(duk::handle_type<duk::safe_handle>);
+
+
+// Check if strings match duk::string_type concept.
+static_assert(duk::string_type<const char*>);
+static_assert(duk::string_type<std::string>);
+static_assert(duk::string_type<std::string_view>);
 
 
 struct DukCppTest
@@ -69,7 +79,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (value arguments)")
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "add(1, 2)");
-  REQUIRE(duk::pull<int>(ctx_, -1) == 3);
+  REQUIRE(duk::get<int>(ctx_, -1) == 3);
 }
 
 
@@ -85,7 +95,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (reference arguments)")
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "add(1, 2)");
-  REQUIRE(duk::pull<int>(ctx_, -1) == 3);
+  REQUIRE(duk::get<int>(ctx_, -1) == 3);
 }
 
 
@@ -98,15 +108,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: int"
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "int_int(-5)");
-  REQUIRE(duk::pull<int>(ctx_, -1) == -5);
+  REQUIRE(duk::get<int>(ctx_, -1) == -5);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "int_crefint(-5)");
-  REQUIRE(duk::pull<int>(ctx_, -1) == -5);
+  REQUIRE(duk::get<int>(ctx_, -1) == -5);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "crefint_crefint(-5)");
-  REQUIRE(duk::pull<const int&>(ctx_, -1) == -5);
+  REQUIRE(duk::get<const int&>(ctx_, -1) == -5);
   duk_pop(ctx_);
 }
 
@@ -120,15 +130,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: unsi
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "uint_uint(5)");
-  REQUIRE(duk::pull<unsigned int>(ctx_, -1) == 5);
+  REQUIRE(duk::get<unsigned int>(ctx_, -1) == 5);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "uint_crefuint(5)");
-  REQUIRE(duk::pull<unsigned int>(ctx_, -1) == 5);
+  REQUIRE(duk::get<unsigned int>(ctx_, -1) == 5);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "crefuint_crefuint(5)");
-  REQUIRE(duk::pull<const unsigned int&>(ctx_, -1) == 5);
+  REQUIRE(duk::get<const unsigned int&>(ctx_, -1) == 5);
   duk_pop(ctx_);
 }
 
@@ -142,15 +152,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: floa
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "float_float(1)");
-  REQUIRE(equals(duk::pull<float>(ctx_, -1), 1.0f, 1e-5f));
+  REQUIRE(equals(duk::get<float>(ctx_, -1), 1.0f, 1e-5f));
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "float_creffloat(1)");
-  REQUIRE(equals(duk::pull<float>(ctx_, -1), 1.0f, 1e-5f));
+  REQUIRE(equals(duk::get<float>(ctx_, -1), 1.0f, 1e-5f));
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "creffloat_creffloat(1)");
-  REQUIRE(equals(duk::pull<const float&>(ctx_, -1), 1.0f, 1e-5f));
+  REQUIRE(equals(duk::get<const float&>(ctx_, -1), 1.0f, 1e-5f));
   duk_pop(ctx_);
 }
 
@@ -164,15 +174,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: bool
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "bool_bool(true)");
-  REQUIRE(duk::pull<bool>(ctx_, -1) == true);
+  REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "bool_crefbool(true)");
-  REQUIRE(duk::pull<bool>(ctx_, -1) == true);
+  REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "crefbool_crefbool(true)");
-  REQUIRE(duk::pull<const bool&>(ctx_, -1) == true);
+  REQUIRE(duk::get<const bool&>(ctx_, -1) == true);
   duk_pop(ctx_);
 }
 
@@ -191,15 +201,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: enum
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "enum_enum(0)");
-  REQUIRE(duk::pull<Enum>(ctx_, -1) == Enum::A);
+  REQUIRE(duk::get<Enum>(ctx_, -1) == Enum::A);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "enum_crefenum(1)");
-  REQUIRE(duk::pull<Enum>(ctx_, -1) == Enum::B);
+  REQUIRE(duk::get<Enum>(ctx_, -1) == Enum::B);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "crefenum_crefenum(2)");
-  REQUIRE(duk::pull<const Enum&>(ctx_, -1) == Enum::C);
+  REQUIRE(duk::get<const Enum&>(ctx_, -1) == Enum::C);
   duk_pop(ctx_);
 }
 
@@ -213,15 +223,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std:
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "string_string('test')");
-  REQUIRE(duk::pull<std::string>(ctx_, -1) == "test");
+  REQUIRE(duk::get<std::string>(ctx_, -1) == "test");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "string_crefstring('test')");
-  REQUIRE(duk::pull<std::string>(ctx_, -1) == "test");
+  REQUIRE(duk::get<std::string>(ctx_, -1) == "test");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "crefstring_crefstring('test')");
-  REQUIRE(duk::pull<const std::string&>(ctx_, -1) == "test");
+  REQUIRE(duk::get<const std::string&>(ctx_, -1) == "test");
   duk_pop(ctx_);
 }
 
@@ -235,15 +245,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std:
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "(string_string('test'))");
-  REQUIRE(duk::pull<std::string_view>(ctx_, -1) == "test");
+  REQUIRE(duk::get<std::string_view>(ctx_, -1) == "test");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "(string_crefstring('test'))");
-  REQUIRE(duk::pull<std::string_view>(ctx_, -1) == "test");
+  REQUIRE(duk::get<std::string_view>(ctx_, -1) == "test");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "(crefstring_crefstring('test'))");
-  REQUIRE(duk::pull<std::string_view>(ctx_, -1) == "test");
+  REQUIRE(duk::get<std::string_view>(ctx_, -1) == "test");
   duk_pop(ctx_);
 }
 
@@ -255,28 +265,26 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: cons
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "constchar_constchar('test')");
-  REQUIRE(std::strcmp(duk::pull<const char*>(ctx_, -1), "test") == 0);
+  REQUIRE(std::strcmp(duk::get<const char*>(ctx_, -1), "test") == 0);
   duk_pop(ctx_);
 }
 
 
 TEST_CASE_METHOD(DukCppTest, "Register overloaded function (value arguments)")
 {
-  // TODO: This shouldn't be needed, but doing those casts directly in duk::put_function call fails to compile under
-  // MSVC. Bug report: https://developercommunity.visualstudio.com/t/Code-compiles-in-GCC-and-Clang-but-fail/10673264
-  static constexpr auto add1 = static_cast<int(*)(int, int)>(add);
-  static constexpr auto add2 = static_cast<std::string(*)(std::string_view, std::string_view)>(add);
-
   duk_push_global_object(ctx_);
-  duk::put_function<add1, add2>(ctx_, -1, "add");
+  duk::put_function<
+    static_cast<int(*)(int, int)>(add),
+    static_cast<std::string(*)(std::string_view, std::string_view)>(add)
+  >(ctx_, -1, "add");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "add(1, 2)");
-  REQUIRE(duk::pull<int>(ctx_, -1) == 3);
+  REQUIRE(duk::get<int>(ctx_, -1) == 3);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "add('a', 'b')");
-  REQUIRE(duk::pull<std::string>(ctx_, -1) == "ab");
+  REQUIRE(duk::get<std::string>(ctx_, -1) == "ab");
   duk_pop(ctx_);
 }
 
@@ -307,11 +315,11 @@ TEST_CASE_METHOD(DukCppTest, "Register constexpr functor")
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "func()");
-  REQUIRE(duk::pull<bool>(ctx_, -1) == true);
+  REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "func(10)");
-  REQUIRE(duk::pull<int>(ctx_, -1) == 10);
+  REQUIRE(duk::get<int>(ctx_, -1) == 10);
   duk_pop(ctx_);
 }
 
@@ -352,14 +360,14 @@ TEST_CASE_METHOD(DukCppTest, "Register lambda with capture list")
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "multiply(10)");
-  REQUIRE(duk::pull<int>(ctx_, -1) == 50);
+  REQUIRE(duk::get<int>(ctx_, -1) == 50);
 }
 
 
 TEST_CASE_METHOD(DukCppTest, "Call ES function in C++ (non-null return value)")
 {
   duk_eval_string(ctx_, "function f(a, b) { return a * b; }; (f);");
-  auto f = duk::safe_pull<std::function<int(int, int)>>(ctx_, -1);
+  auto f = duk::get<std::function<int(int, int)>>(ctx_, -1);
   auto result = f(2, 3);
   REQUIRE(result == 6);
 }
@@ -368,7 +376,7 @@ TEST_CASE_METHOD(DukCppTest, "Call ES function in C++ (non-null return value)")
 TEST_CASE_METHOD(DukCppTest, "Call ES function in C++ (null return value)")
 {
   duk_eval_string(ctx_, "function f() {}; (f);");
-  auto f = duk::safe_pull<std::function<void()>>(ctx_, -1);
+  auto f = duk::get<std::function<void()>>(ctx_, -1);
   f();
 }
 
@@ -388,7 +396,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (function argument)")
     function f() { return 3; }
     multiply(10, f);
   )__");
-  REQUIRE(duk::pull<int>(ctx_, -1) == 30);
+  REQUIRE(duk::get<int>(ctx_, -1) == 30);
 }
 
 
@@ -531,24 +539,24 @@ TEST_CASE_METHOD(DukCppTest, "Safe handle (function)")
 }
 
 
-TEST_CASE_METHOD(DukCppTest, "Push and pull std::string")
+TEST_CASE_METHOD(DukCppTest, "Push and get std::string")
 {
   duk::push(ctx_, std::string("test string"));
-  REQUIRE(duk::pull<std::string>(ctx_, -1) == "test string");
+  REQUIRE(duk::get<std::string>(ctx_, -1) == "test string");
 }
 
 
-TEST_CASE_METHOD(DukCppTest, "Push and pull std::string_view")
+TEST_CASE_METHOD(DukCppTest, "Push and get std::string_view")
 {
   duk::push(ctx_, std::string_view("test string"));
-  REQUIRE(duk::pull<std::string_view>(ctx_, -1) == "test string");
+  REQUIRE(duk::get<std::string_view>(ctx_, -1) == "test string");
 }
 
 
-TEST_CASE_METHOD(DukCppTest, "Push and pull const char*")
+TEST_CASE_METHOD(DukCppTest, "Push and get const char*")
 {
   duk::push(ctx_, "test string");
-  REQUIRE(std::strcmp(duk::pull<const char*>(ctx_, -1), "test string") == 0);
+  REQUIRE(std::strcmp(duk::get<const char*>(ctx_, -1), "test string") == 0);
 }
 
 
@@ -575,14 +583,14 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
     v1.add(2);
     v1.length();
   )__");
-  REQUIRE(equals(duk::pull<double>(ctx_, -1), 5.0, 1e-5));
+  REQUIRE(equals(duk::get<double>(ctx_, -1), 5.0, 1e-5));
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, R"__(
     v1.add(new Vector(2, 8));
     v1.length();
   )__");
-  REQUIRE(equals(duk::pull<double>(ctx_, -1), 13.0, 1e-5));
+  REQUIRE(equals(duk::get<double>(ctx_, -1), 13.0, 1e-5));
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, R"__(
@@ -591,13 +599,20 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
     v1.add(v3);
     v1 instanceof Vector && v2 instanceof Vector && v3 instanceof Vector
   )__");
-  REQUIRE(duk::pull<bool>(ctx_, -1) == true);
+  REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, R"__(
     addVector(v4, new Vector(2, 3)).length()
   )__");
-  REQUIRE(equals(duk::pull<float>(ctx_, -1), 5.0f, 1e-5f));
+  REQUIRE(equals(duk::get<float>(ctx_, -1), 5.0f, 1e-5f));
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    v4.x = 100;
+    v4.x;
+  )__");
+  REQUIRE(equals(duk::get<double>(ctx_, -1), 100.0, 1e-5));
   duk_pop(ctx_);
 }
 
@@ -607,7 +622,7 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
   auto assertEq = [this](const char* code, const char* result)
   {
     duk_eval_string(ctx_, code);
-    REQUIRE(duk::pull<std::string>(ctx_, -1) == result);
+    REQUIRE(duk::get<std::string>(ctx_, -1) == result);
     duk_pop(ctx_);
   };
 
@@ -728,7 +743,7 @@ TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Ranges (std::input_iterator)", ""
   }
 
   duk_eval_string(DukCppTest::ctx_, containerCode);
-  auto range = duk::pull<TestType>(DukCppTest::ctx_, -1);
+  auto range = duk::get<TestType>(DukCppTest::ctx_, -1);
 
   auto iter = range.begin();
   REQUIRE(*iter == 0);
@@ -748,7 +763,7 @@ TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Ranges (std::input_iterator)", ""
 TEST_CASE_METHOD(DukCppTest, "Ranges (std::random_access_iterator)")
 {
   duk_eval_string(ctx_, "([0, 1, 2, 3, 4]);");
-  auto range = duk::pull<duk::safe_array_input_range<int>>(ctx_, -1);
+  auto range = duk::get<duk::safe_array_input_range<int>>(ctx_, -1);
 
   auto iter = range.begin();
 
@@ -816,13 +831,13 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
     duk_eval_string(ctx_, R"__(
       sumRange([1, 2, 3]);
     )__");
-    REQUIRE(duk::pull<int>(ctx_, -1) == 6);
+    REQUIRE(duk::get<int>(ctx_, -1) == 6);
     duk_pop(ctx_);
 
     duk_eval_string(ctx_, R"__(
       sumRanges([1, 2, 3], [10, 20, 30]);
     )__");
-    REQUIRE(duk::pull<std::string>(ctx_, -1) == "11 22 33 ");
+    REQUIRE(duk::get<std::string>(ctx_, -1) == "11 22 33 ");
     duk_pop(ctx_);
   }
 
@@ -851,13 +866,13 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
 
       sumRange(iterableObject);
     )__");
-    REQUIRE(duk::pull<int>(ctx_, -1) == 10);
+    REQUIRE(duk::get<int>(ctx_, -1) == 10);
     duk_pop(ctx_);
 
     duk_eval_string(ctx_, R"__(
       sumRanges(iterableObject, iterableObject);
     )__");
-    REQUIRE(duk::pull<std::string>(ctx_, -1) == "2 4 6 8 ");
+    REQUIRE(duk::get<std::string>(ctx_, -1) == "2 4 6 8 ");
     duk_pop(ctx_);
   }
 }
@@ -885,7 +900,7 @@ TEST_CASE_METHOD(DukCppTest, "Generic object binding")
   duk::push(ctx_, A{});
   duk::push(ctx_, B{});
   duk_call(ctx_, 2);
-  REQUIRE(duk::pull<std::string>(ctx_, -1) == "helloworld");
+  REQUIRE(duk::get<std::string>(ctx_, -1) == "helloworld");
   duk_pop(ctx_);
 
   // Invalid arguments

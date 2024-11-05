@@ -88,6 +88,9 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
     static_cast<void(Vector::*)(const Vector&)>(&Vector::add)
   >(ctx, -1, "add");
 
+  duk::put_property<&Vector::x>(ctx, -1, "x");
+  duk::put_property<&Vector::y>(ctx, -1, "y");
+
   duk::put_function<
     &Vector::length
   >(ctx, -1, "length");

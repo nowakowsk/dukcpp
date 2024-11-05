@@ -16,24 +16,28 @@ namespace duk
 
 
 template<typename T>
-concept integer = 
+concept integer =
   std::is_integral_v<std::decay_t<T>> &&
-  !std::is_same_v<std::decay_t<T>, bool>;
+  !std::is_same_v<std::decay_t<T>, bool> &&
+  !std::is_member_pointer_v<std::decay_t<T>>;
 
 
 template<typename T>
-concept floating_point = 
-  std::is_floating_point_v<std::decay_t<T>>;
+concept floating_point =
+  std::is_floating_point_v<std::decay_t<T>> &&
+  !std::is_member_pointer_v<std::decay_t<T>>;
 
 
 template<typename T>
 concept enumeration = 
-  std::is_enum_v<std::decay_t<T>>;
+  std::is_enum_v<std::decay_t<T>> &&
+  !std::is_member_pointer_v<std::decay_t<T>>;
 
 
 template<typename T>
-concept boolean = 
-  std::is_same_v<std::decay_t<T>, bool>;
+concept boolean =
+  std::is_same_v<std::decay_t<T>, bool> &&
+  !std::is_member_pointer_v<std::decay_t<T>>;
 
 
 namespace detail
@@ -74,6 +78,21 @@ struct DtorDeleter final
       ptr->~T();
   }
 };
+
+
+// member_type
+
+template<typename T>
+struct member_type;
+
+template<typename C, typename M>
+struct member_type<M C::*>
+{
+  using type = M;
+};
+
+template<typename T>
+using member_type_t = member_type<T>::type;
 
 
 } // namespace detail

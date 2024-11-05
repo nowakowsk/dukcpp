@@ -19,6 +19,15 @@ struct type_traits;
 } // namespace detail
 
 
+// TODO: Make sure it never throws.
+template<typename T>
+[[nodiscard]]
+bool check_type(duk_context* ctx, duk_idx_t idx)
+{
+  return detail::type_traits<T>::check_type(ctx, idx);
+}
+
+
 template<typename T>
 void push(duk_context* ctx, T&& value, auto&&... args)
 {
@@ -28,21 +37,21 @@ void push(duk_context* ctx, T&& value, auto&&... args)
 
 template<typename T>
 [[nodiscard]]
-decltype(auto) pull(duk_context* ctx, duk_idx_t idx)
+decltype(auto) get(duk_context* ctx, duk_idx_t idx)
 {
-  return detail::type_traits<T>::pull(ctx, idx);
+  return detail::type_traits<T>::get(ctx, idx);
 }
 
 
-// Checks type before pulling. Throws error if check fails.
+// Checks type before getting. Throws error if check fails.
 template<typename T>
 [[nodiscard]]
-decltype(auto) safe_pull(duk_context* ctx, duk_idx_t idx)
+decltype(auto) safe_get(duk_context* ctx, duk_idx_t idx)
 {
-  if (!detail::type_traits<T>::check_type(ctx, idx)) [[unlikely]]
+  if (!check_type<T>(ctx, idx)) [[unlikely]]
     throw error(ctx, "unexpected type");
 
-  return detail::type_traits<T>::pull(ctx, idx);
+  return get<T>(ctx, idx);
 }
 
 

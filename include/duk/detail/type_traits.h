@@ -8,7 +8,6 @@
 #include <duk/range.h>
 #include <duk/string_traits.h>
 #include <duk/type_adapter.h>
-
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
 #include <type_traits>
@@ -18,7 +17,7 @@ namespace duk::detail
 {
 
 
-template<typename Signature, typename ArgIdx>
+template<typename Signature, typename ArgIdx, bool isPropertyCall>
 struct FunctionWrapper;
 
 
@@ -179,7 +178,6 @@ template<typename T>
 struct type_traits
 {
   // TODO: Use index property instead of named property?
-  // TODO: Make it shared across all T types by moving it out of this struct template.
   static constexpr auto objInfoName = DUKCPP_DETAIL_INTERNAL_NAME("objInfo");
 
   using DecayT = std::decay_t<T>;
@@ -230,11 +228,11 @@ struct type_traits
   }
 
   [[nodiscard]]
-  static T pull(duk_context* ctx, duk_idx_t idx)
+  static T get(duk_context* ctx, duk_idx_t idx)
   {
     // TODO:
     // Accessing property here isn't ideal since, in most cases, it's already been done in check_type.
-    // I am not sure how bad it is for the peformance, but could be significant. Consider optimizing it somehow.
+    // I am not sure how bad it is for the performance, but could be significant. Consider optimizing it somehow.
     duk_get_prop_string(ctx, idx, objInfoName);
     auto objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
     duk_pop(ctx);
@@ -265,7 +263,7 @@ template<typename ...Ts>
 struct type_traits<array_input_range<Ts...>>
 {
   [[nodiscard]]
-  static array_input_range<Ts...> pull(duk_context* ctx, duk_idx_t idx)
+  static array_input_range<Ts...> get(duk_context* ctx, duk_idx_t idx)
   {
     return { ctx, idx };
   }
@@ -282,7 +280,7 @@ template<typename ...Ts>
 struct type_traits<symbol_input_range<Ts...>>
 {
   [[nodiscard]]
-  static symbol_input_range<Ts...> pull(duk_context* ctx, duk_idx_t idx)
+  static symbol_input_range<Ts...> get(duk_context* ctx, duk_idx_t idx)
   {
     return { ctx, idx };
   }
@@ -299,7 +297,7 @@ template<typename ...Ts>
 struct type_traits<input_range<Ts...>>
 {
   [[nodiscard]]
-  static input_range<Ts...> pull(duk_context* ctx, duk_idx_t idx)
+  static input_range<Ts...> get(duk_context* ctx, duk_idx_t idx)
   {
     return { ctx, idx };
   }
@@ -348,7 +346,7 @@ struct type_traits<T>
           static constexpr auto argCount = std::tuple_size_v<ArgsTuple>;
 
           return FunctionWrapper<
-            Signature, std::make_index_sequence<argCount>
+            Signature, std::make_index_sequence<argCount>, false
           >::run(ctx, *funcPtr);
         }()) < 0) && ...))
       {
@@ -369,7 +367,7 @@ struct type_traits<T>
       return 0;
     };
 
-    auto* funcPtr = make<DecayFunc>(ctx, std::forward<func_t>(func));
+    auto* funcPtr = make<DecayFunc>(ctx, std::forward<decltype(func)>(func));
 
     duk_push_c_function(ctx, wrapper, DUK_VARARGS);
 
@@ -381,11 +379,11 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static auto pull(duk_context* ctx, duk_idx_t idx)
+  static auto get(duk_context* ctx, duk_idx_t idx)
   {
     using Func = boost::callable_traits::function_type_t<func_t>;
 
-    return function_handle<Func>({ctx, idx});
+    return safe_function_handle<Func>(handle(ctx, idx));
   }
 
   [[nodiscard]]
@@ -406,7 +404,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static std::decay_t<T> pull(duk_context* ctx, duk_idx_t idx)
+  static std::decay_t<T> get(duk_context* ctx, duk_idx_t idx)
   {
     return duk_get_int(ctx, idx);
   }
@@ -429,7 +427,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static std::decay_t<T> pull(duk_context* ctx, duk_idx_t idx)
+  static std::decay_t<T> get(duk_context* ctx, duk_idx_t idx)
   {
     return duk_get_uint(ctx, idx);
   }
@@ -451,7 +449,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static std::decay_t<T> pull(duk_context* ctx, duk_idx_t idx)
+  static std::decay_t<T> get(duk_context* ctx, duk_idx_t idx)
   {
     return duk_get_number(ctx, idx);
   }
@@ -473,7 +471,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static bool pull(duk_context* ctx, duk_idx_t idx)
+  static bool get(duk_context* ctx, duk_idx_t idx)
   {
     return duk_get_boolean(ctx, idx);
   }
@@ -498,9 +496,9 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static auto pull(duk_context* ctx, duk_idx_t idx)
+  static auto get(duk_context* ctx, duk_idx_t idx)
   {
-    return static_cast<DecayT>(type_traits<IntT>::pull(ctx, idx));
+    return static_cast<DecayT>(type_traits<IntT>::get(ctx, idx));
   }
 
   [[nodiscard]]
@@ -524,7 +522,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static DecayT pull(duk_context* ctx, duk_idx_t idx)
+  static DecayT get(duk_context* ctx, duk_idx_t idx)
   {
     duk_size_t size;
     auto string = duk_get_lstring(ctx, idx, &size);
@@ -540,14 +538,14 @@ struct type_traits<T>
 };
 
 
-// Kinda weird specialization, but it makes certain things easier (e.g. checking void function "return value").
+// A weird specialization, but it makes certain things easier (e.g. checking void function "return value").
 // May be removed if it causes problems.
 template<>
 struct type_traits<void>
 {
   // push() is impossible. Not implemented.
 
-  static void pull([[maybe_unused]] duk_context* ctx, [[maybe_unused]] duk_idx_t idx)
+  static void get([[maybe_unused]] duk_context* ctx, [[maybe_unused]] duk_idx_t idx)
   {
     // Do nothing.
   }
