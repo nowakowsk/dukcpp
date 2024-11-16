@@ -1,3 +1,4 @@
+#include "character.h"
 #include "common.h"
 #include "inheritance.h"
 #include "lifetime.h"
@@ -10,9 +11,6 @@
 #include <numeric>
 #include <stdexcept>
 #include <string>
-
-
-// TODO: Make tests for changes.
 
 
 // Check if iterators and ranges conform to standard requirements of their categories.
@@ -701,6 +699,79 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
   assertEq("runMethodC(final);", "FinalC");
 
   REQUIRE_THROWS(duk_eval_string(ctx_, "base.methodC();"));
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Enum")
+{
+  enum class Enum
+  {
+    E1, E2
+  };
+
+  duk_push_global_object(ctx_);
+
+  duk::def_prop_enum(ctx_, -1, "Enum",
+    Enum::E1, "E1",
+    Enum::E2, "E2"
+  );
+
+  duk_pop(ctx_); // Pop global object
+
+  duk_eval_string(ctx_, "Enum.E1");
+  REQUIRE(duk::get<Enum>(ctx_, -1) == Enum::E1);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "Enum.E2");
+  REQUIRE(duk::get<Enum>(ctx_, -1) == Enum::E2);
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Properties")
+{
+  duk_push_global_object(ctx_);
+
+  registerVector(ctx_, -1);
+  registerCharacter(ctx_, -1);
+
+  duk_pop(ctx_); // Pop global object
+
+  duk_eval_string(ctx_, R"__(
+    var c = new Character();
+    c.id = 100;
+    c.id;
+  )__");
+  REQUIRE(duk::get<int>(ctx_, -1) == 100);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    c.name = "name";
+    c.name;
+  )__");
+  REQUIRE(duk::get<std::string>(ctx_, -1) == "name");
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    c.active = true;
+    c.active;
+  )__");
+  REQUIRE(duk::get<bool>(ctx_, -1) == true);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    c.type = Character.Type.ENEMY;
+    c.type;
+  )__");
+  REQUIRE(duk::get<Character::Type>(ctx_, -1) == Character::Type::ENEMY);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    c.position = new Vector(10, 20);
+    c.position;
+  )__");
+  REQUIRE(duk::get<Vector>(ctx_, -1) == Vector(10, 20));
+  duk_pop(ctx_);
 }
 
 

@@ -31,7 +31,7 @@ struct ObjectInfo
   virtual ~ObjectInfo() = default;
 
   [[nodiscard]]
-  virtual bool checkType(std::size_t typeId) = 0;
+  virtual bool checkType(std::size_t typeId) noexcept = 0;
 
   // What's happening here is quite hard to follow, so here is a short explanation.
   //
@@ -94,14 +94,13 @@ struct ObjectInfoImpl : ObjectInfo
   }
 
   [[nodiscard]]
-  bool checkType(std::size_t typeId) override
+  bool checkType(std::size_t typeId) noexcept override
   {
     return getImpl(typeId, nullptr);
   }
 
 private:
-  template<typename Type>
-  requires has_type_adapter<Type>
+  template<has_type_adapter Type>
   [[nodiscard]]
   bool getImplType(std::size_t typeId, std::byte* buffer)
   {
@@ -138,7 +137,6 @@ private:
   }
 
   template<typename Type>
-  requires (!has_type_adapter<Type>)
   [[nodiscard]]
   bool getImplType(std::size_t typeId, std::byte* buffer)
   {
@@ -241,7 +239,7 @@ struct type_traits
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     if (!duk_is_object(ctx, idx))
       return false;
@@ -269,7 +267,7 @@ struct type_traits<array_input_range<Ts...>>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_array(ctx, idx);
   }
@@ -286,7 +284,7 @@ struct type_traits<symbol_input_range<Ts...>>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_object(ctx, idx);
   }
@@ -303,7 +301,7 @@ struct type_traits<input_range<Ts...>>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_array(ctx, idx) || duk_is_object(ctx, idx);
   }
@@ -387,7 +385,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_function(ctx, idx);
   }
@@ -410,7 +408,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_number(ctx, idx);
   }
@@ -433,7 +431,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_number(ctx, idx);
   }
@@ -455,7 +453,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_number(ctx, idx);
   }
@@ -477,7 +475,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_boolean(ctx, idx);
   }
@@ -502,7 +500,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return type_traits<IntT>::check_type(ctx, idx);
   }
@@ -531,7 +529,7 @@ struct type_traits<T>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_string(ctx, idx);
   }
@@ -551,7 +549,7 @@ struct type_traits<void>
   }
 
   [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx)
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_undefined(ctx, idx);
   }

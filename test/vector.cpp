@@ -15,17 +15,10 @@ Vector::Vector(float x, float y) :
 }
 
 
-Vector::Vector(const Vector& other) :
-  x(other.x),
-  y(other.y)
+bool Vector::operator==(const Vector& other) const
 {
-}
-
-
-Vector::Vector(Vector&& other) :
-  x(other.x),
-  y(other.y)
-{
+  return x == other.x &&
+         y == other.y;
 }
 
 
@@ -88,8 +81,8 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
     static_cast<void(Vector::*)(const Vector&)>(&Vector::add)
   >(ctx, -1, "add");
 
-  duk::put_property<&Vector::x>(ctx, -1, "x");
-  duk::put_property<&Vector::y>(ctx, -1, "y");
+  duk::def_prop<&Vector::x>(ctx, -1, "x");
+  duk::def_prop<&Vector::y>(ctx, -1, "y");
 
   duk::put_function<
     &Vector::length

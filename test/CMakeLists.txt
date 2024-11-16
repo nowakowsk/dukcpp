@@ -13,6 +13,7 @@ include(Catch)
 # dukcpp-test
 
 add_executable(${MODULE_NAME}
+  character.cpp
   common.cpp
   inheritance.cpp
   test.cpp

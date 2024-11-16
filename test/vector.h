@@ -9,8 +9,7 @@ struct Vector
   Vector();
   Vector(float x, float y);
 
-  Vector(const Vector& other);
-  Vector(Vector&& other);
+  bool operator==(const Vector& other) const;
 
   [[nodiscard]]
   float length() const;

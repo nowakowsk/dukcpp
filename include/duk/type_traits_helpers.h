@@ -19,10 +19,9 @@ struct type_traits;
 } // namespace detail
 
 
-// TODO: Make sure it never throws.
 template<typename T>
 [[nodiscard]]
-bool check_type(duk_context* ctx, duk_idx_t idx)
+bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
 {
   return detail::type_traits<T>::check_type(ctx, idx);
 }

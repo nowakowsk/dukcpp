@@ -13,6 +13,7 @@
 #include <duk/context.h>
 #include <duk/detail/memory_resource.h>
 #include <duk/detail/type_traits.h>
+#include <duk/enum_helpers.h>
 #include <duk/error.h>
 #include <duk/handle.h>
 #include <duk/type_traits_helpers.h>

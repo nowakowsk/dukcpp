@@ -27,14 +27,11 @@ struct type_adapter_type
   using type = T; // TODO: See if this can be removed.
 };
 
-
-template<typename T>
-requires has_type_adapter<T>
+template<has_type_adapter T>
 struct type_adapter_type<T>
 {
   using type = type_adapter<T>::type;
 };
-
 
 template<typename T>
 using type_adapter_type_t = typename type_adapter_type<T>::type;
@@ -53,14 +50,11 @@ concept has_type_adapter_base = requires
 template<typename T>
 struct type_adapter_base;
 
-
-template<typename T>
-requires has_type_adapter_base<T>
+template<has_type_adapter_base T>
 struct type_adapter_base<T>
 {
   using type = type_adapter<T>::base;
 };
-
 
 template<typename T>
 using type_adapter_base_t = typename type_adapter_base<T>::type;

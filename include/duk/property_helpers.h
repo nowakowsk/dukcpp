@@ -13,53 +13,77 @@ namespace detail
 {
 
 
-template<auto member_ptr>
+template<auto MemberPtr>
 [[nodiscard]]
-auto& property_getter(boost::callable_traits::class_of_t<decltype(member_ptr)>& obj)
+auto& prop_getter(boost::callable_traits::class_of_t<decltype(MemberPtr)>& obj)
 {
-  return obj.*member_ptr;
+  return obj.*MemberPtr;
 }
 
 
-template<auto member_ptr>
-void property_setter(
-  boost::callable_traits::class_of_t<decltype(member_ptr)>& obj,
-  member_type_t<decltype(member_ptr)>&& value
+template<auto MemberPtr>
+void prop_setter(
+  boost::callable_traits::class_of_t<decltype(MemberPtr)>& obj,
+  const member_type_t<decltype(MemberPtr)>& value
 )
 {
-  obj.*member_ptr = std::move(value);
+  obj.*MemberPtr = value;
 }
 
 
-template<auto accessor>
-duk_idx_t push_accessor(duk_context* ctx)
+template<auto Accessor>
+duk_idx_t push_prop_accessor(duk_context* ctx)
 {
-  static constexpr auto accessorWrapper = 
-    detail::FunctionSignatureWrapper<function_descriptor<accessor, decltype(accessor)>, true>::run;
-
-  return duk_push_c_function(ctx, accessorWrapper, DUK_VARARGS);
+  return duk_push_c_function(
+    ctx,
+    detail::FunctionSignatureWrapper<function_descriptor<Accessor, decltype(Accessor)>, true>::run,
+    DUK_VARARGS
+  );
 }
 
 
 } // namespace detail
 
 
-template<auto member_ptr>
-void put_read_only_property(duk_context* ctx, duk_idx_t idx, std::string_view name)
+template<auto MemberPtr>
+duk_idx_t push_prop_getter(duk_context* ctx)
 {
-  duk_push_lstring(ctx, name.data(), name.length());
-  detail::push_accessor<detail::property_getter<member_ptr>>(ctx);
-  duk_def_prop(ctx, idx - 2, DUK_DEFPROP_HAVE_GETTER);
+  return detail::push_prop_accessor<detail::prop_getter<MemberPtr>>(ctx);
 }
 
 
-template<auto member_ptr>
-void put_property(duk_context* ctx, duk_idx_t idx, std::string_view name)
+template<auto MemberPtr>
+duk_idx_t push_prop_setter(duk_context* ctx)
+{
+  return detail::push_prop_accessor<detail::prop_setter<MemberPtr>>(ctx);
+}
+
+
+template<auto MemberPtr>
+void def_prop_getter(duk_context* ctx, duk_idx_t idx, std::string_view name, duk_uint_t flags = 0)
 {
   duk_push_lstring(ctx, name.data(), name.length());
-  detail::push_accessor<detail::property_getter<member_ptr>>(ctx);
-  detail::push_accessor<detail::property_setter<member_ptr>>(ctx);
-  duk_def_prop(ctx, idx - 3, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER);
+  push_prop_getter<MemberPtr>(ctx);
+  duk_def_prop(ctx, idx - 2, DUK_DEFPROP_HAVE_GETTER | flags);
+}
+
+
+template<auto MemberPtr>
+void def_prop_setter(duk_context* ctx, duk_idx_t idx, std::string_view name, duk_uint_t flags = 0)
+{
+  duk_push_lstring(ctx, name.data(), name.length());
+  push_prop_setter<MemberPtr>(ctx);
+  duk_def_prop(ctx, idx - 2, DUK_DEFPROP_HAVE_SETTER | flags);
+}
+
+
+template<auto MemberPtr>
+void def_prop(duk_context* ctx, duk_idx_t idx, std::string_view name, duk_uint_t flags = 0)
+{
+  duk_push_lstring(ctx, name.data(), name.length());
+  push_prop_getter<MemberPtr>(ctx);
+  push_prop_setter<MemberPtr>(ctx);
+  duk_def_prop(ctx, idx - 3, DUK_DEFPROP_HAVE_GETTER | DUK_DEFPROP_HAVE_SETTER | flags);
 }
 
 
