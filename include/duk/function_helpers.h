@@ -21,10 +21,10 @@ duk_idx_t push_function(duk_context* ctx)
 }
 
 
-template<auto ...Funcs>
+template<auto ...Func>
 duk_idx_t push_function(duk_context* ctx)
 {
-  return push_function<function_descriptor<Funcs, decltype(Funcs)>...>(ctx);
+  return push_function<function_descriptor<Func, decltype(Func)>...>(ctx);
 }
 
 
@@ -36,25 +36,27 @@ void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
 }
 
 
-template<auto ...Funcs>
+template<auto ...Func>
 void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
 {
-  push_function<Funcs...>(ctx);
+  push_function<Func...>(ctx);
   duk_put_prop_lstring(ctx, idx - 1, name.data(), name.length());
 }
 
 
-template<typename Func>
-void push_function(duk_context* ctx, Func&& func)
+template<typename ...Signature>
+void push_function(duk_context* ctx, auto&& func)
 {
-  detail::type_traits<as_function<Func>>::push(ctx, std::forward<Func>(func));
+  using Func = decltype(func);
+
+  detail::type_traits<as_function<Func>>::template push<Signature...>(ctx, std::forward<Func>(func));
 }
 
 
-template<typename Func>
-void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name, Func&& func)
+template<typename ...Signature>
+void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name, auto&& func)
 {
-  push_function(ctx, std::forward<Func>(func));
+  push_function<Signature...>(ctx, std::forward<decltype(func)>(func));
   duk_put_prop_lstring(ctx, idx - 1, name.data(), name.length());
 }
 

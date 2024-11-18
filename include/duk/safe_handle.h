@@ -165,7 +165,7 @@ private:
     duk_push_global_stash(ctx);
 
     scoped_pop __(ctx); // duk_get_prop_heapptr
-    if (!duk_get_prop_lstring(ctx, -1, reinterpret_cast<const char*>(&heapPtr), heapPtrSize))  [[unlikely]]
+    if (!duk_get_prop_lstring(ctx, -1, reinterpret_cast<const char*>(&heapPtr), heapPtrSize)) [[unlikely]]
       duk_fatal(ctx, "handle corrupted (decRef, get object info)");
 
     scoped_pop ___(ctx); // duk_get_prop_index

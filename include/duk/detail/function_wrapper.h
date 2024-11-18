@@ -14,7 +14,7 @@ namespace duk
 {
 
 
-template<auto func, typename ...Signature>
+template<auto Func, typename ...Signature>
 struct function_descriptor;
 
 
@@ -132,8 +132,8 @@ struct FunctionWrapper<Signature, std::index_sequence<argIdx...>, IsPropertyCall
 template<typename FuncDesc, bool IsPropertyCall = false>
 struct FunctionSignatureWrapper;
 
-template<auto func, bool IsPropertyCall, typename ...Signature>
-struct FunctionSignatureWrapper<function_descriptor<func, Signature...>, IsPropertyCall>
+template<auto Func, bool IsPropertyCall, typename ...Signature>
+struct FunctionSignatureWrapper<function_descriptor<Func, Signature...>, IsPropertyCall>
 {
   static duk_ret_t run(duk_context* ctx)
   {
@@ -146,7 +146,7 @@ struct FunctionSignatureWrapper<function_descriptor<func, Signature...>, IsPrope
 
         static constexpr auto argCount = std::tuple_size_v<ArgsTuple>;
 
-        return detail::FunctionWrapper<Signature, std::make_index_sequence<argCount>, IsPropertyCall>::run(ctx, func);
+        return detail::FunctionWrapper<Signature, std::make_index_sequence<argCount>, IsPropertyCall>::run(ctx, Func);
       }()) < 0) && ...);
 
     return result;

@@ -287,7 +287,7 @@ TEST_CASE_METHOD(DukCppTest, "Register overloaded function (value arguments)")
 }
 
 
-TEST_CASE_METHOD(DukCppTest, "Register constexpr functor")
+TEST_CASE_METHOD(DukCppTest, "Register functor")
 {
   struct Functor
   {
@@ -307,9 +307,21 @@ TEST_CASE_METHOD(DukCppTest, "Register constexpr functor")
   };
 
   duk_push_global_object(ctx_);
-  duk::put_function<
-    duk::function_descriptor<Functor{}, bool(), int(int)>
-  >(ctx_, -1, "func");
+
+  SECTION("constexpr")
+  {
+    duk::put_function<
+      duk::function_descriptor<Functor{}, bool(), int(int)>
+    >(ctx_, -1, "func");
+  }
+
+  SECTION("non-constexpr")
+  {
+    Functor f;
+
+    duk::put_function<bool(), int(int)>(ctx_, -1, "func", f);
+  }
+
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "func()");
