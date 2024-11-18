@@ -17,7 +17,7 @@ namespace duk::detail
 {
 
 
-template<typename Signature, typename ArgIdx, bool isPropertyCall>
+template<typename Signature, typename ArgIdx, bool IsPropertyCall>
 struct FunctionWrapper;
 
 

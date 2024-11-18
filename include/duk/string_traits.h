@@ -48,17 +48,17 @@ struct std_string_traits_impl
 
 
 // std::string
-template<typename ...Args>
-struct string_traits<std::basic_string<char, Args...>> :
-  detail::std_string_traits_impl<std::basic_string<char, Args...>>
+template<typename ...Ts>
+struct string_traits<std::basic_string<char, Ts...>> :
+  detail::std_string_traits_impl<std::basic_string<char, Ts...>>
 {
 };
 
 
 // std::string_view
-template<typename ...Args>
-struct string_traits<std::basic_string_view<char, Args...>> :
-  detail::std_string_traits_impl<std::basic_string_view<char, Args...>>
+template<typename ...Ts>
+struct string_traits<std::basic_string_view<char, Ts...>> :
+  detail::std_string_traits_impl<std::basic_string_view<char, Ts...>>
 {
 };
 

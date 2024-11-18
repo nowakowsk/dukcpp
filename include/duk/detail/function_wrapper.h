@@ -78,11 +78,11 @@ static duk_ret_t throwESError(duk_context* ctx, duk_errcode_t errorCode, std::st
 }
 
 
-template<typename Signature, typename ArgIdx, bool isPropertyCall>
+template<typename Signature, typename ArgIdx, bool IsPropertyCall>
 struct FunctionWrapper;
 
-template<typename Signature, bool isPropertyCall, std::size_t ...argIdx>
-struct FunctionWrapper<Signature, std::index_sequence<argIdx...>, isPropertyCall>
+template<typename Signature, bool IsPropertyCall, std::size_t ...argIdx>
+struct FunctionWrapper<Signature, std::index_sequence<argIdx...>, IsPropertyCall>
 {
   using Result = boost::callable_traits::return_type_t<Signature>;
   using ArgsTuple = boost::callable_traits::args_t<Signature>;
@@ -92,10 +92,10 @@ struct FunctionWrapper<Signature, std::index_sequence<argIdx...>, isPropertyCall
     static constexpr bool isMethodCall = requires { typename boost::callable_traits::class_of_t<Signature>; };
 
     // Pop property name string so parameter count on the value stack matches function signature.
-    if constexpr (isPropertyCall)
+    if constexpr (IsPropertyCall)
       duk_pop(ctx);
 
-    if constexpr (isMethodCall || isPropertyCall)
+    if constexpr (isMethodCall || IsPropertyCall)
     {
       duk_push_this(ctx);
       duk_insert(ctx, -static_cast<duk_idx_t>(sizeof...(argIdx)));
@@ -105,7 +105,7 @@ struct FunctionWrapper<Signature, std::index_sequence<argIdx...>, isPropertyCall
                      (type_traits<std::tuple_element_t<argIdx, ArgsTuple>>::check_type(ctx, argIdx) && ...);
     if (!argsMatch)
     {
-      if constexpr (isMethodCall || isPropertyCall)
+      if constexpr (isMethodCall || IsPropertyCall)
         duk_remove(ctx, -static_cast<duk_idx_t>(sizeof...(argIdx)));
 
       return DUK_RET_TYPE_ERROR;
@@ -129,11 +129,11 @@ struct FunctionWrapper<Signature, std::index_sequence<argIdx...>, isPropertyCall
 
 
 // Goes over each function signature within function descriptor.
-template<typename FuncDesc, bool isPropertyCall = false>
+template<typename FuncDesc, bool IsPropertyCall = false>
 struct FunctionSignatureWrapper;
 
-template<auto func, bool isPropertyCall, typename ...Signature>
-struct FunctionSignatureWrapper<function_descriptor<func, Signature...>, isPropertyCall>
+template<auto func, bool IsPropertyCall, typename ...Signature>
+struct FunctionSignatureWrapper<function_descriptor<func, Signature...>, IsPropertyCall>
 {
   static duk_ret_t run(duk_context* ctx)
   {
@@ -146,7 +146,7 @@ struct FunctionSignatureWrapper<function_descriptor<func, Signature...>, isPrope
 
         static constexpr auto argCount = std::tuple_size_v<ArgsTuple>;
 
-        return detail::FunctionWrapper<Signature, std::make_index_sequence<argCount>, isPropertyCall>::run(ctx, func);
+        return detail::FunctionWrapper<Signature, std::make_index_sequence<argCount>, IsPropertyCall>::run(ctx, func);
       }()) < 0) && ...);
 
     return result;
