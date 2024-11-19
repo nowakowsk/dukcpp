@@ -311,19 +311,41 @@ struct type_traits<input_range<Ts...>>
 template<callable T>
 struct type_traits<T>
 {
-  using func_t = callable_traits<T>::type;
+  using Func = callable_traits_t<T>;
 
-  template<typename ...Signature>
+  // Called when user doesn't specify signatures explicitly in duk::push call's template parameters.
+  // This function will try to deduce them.
   static void push(duk_context* ctx, auto&& func)
   {
-    // If signature is not specified explicitly, try to deduce it based on func_t.
-    if constexpr (sizeof...(Signature) == 0)
+    // Try using signatures defined in duk::callable_traits.
+    if constexpr (has_callable_traits_signature_pack<T>)
     {
-      push<boost::callable_traits::function_type_t<func_t>>(ctx, std::forward<decltype(func)>(func));
-      return;
+      expand_pack<callable_traits_signature_pack<T>>::run(
+        [ctx]<typename ...Signature>(auto&& func)
+        {
+          push<Signature...>(ctx, std::forward<decltype(func)>(func));
+        },
+        std::forward<decltype(func)>(func) // Not using lambda capture list to guarantee perfect forwarding.
+      );
     }
+    // Try to deduce signature based on Func. This works only for non-overloaded callables.
+    else if constexpr (requires { typename boost::callable_traits::function_type_t<Func>; })
+    {
+      using Signature = boost::callable_traits::function_type_t<Func>;
 
-    using DecayFunc = std::decay_t<func_t>;
+      push<Signature>(ctx, std::forward<decltype(func)>(func));
+    }
+    else
+    {
+      static_assert(false, "Cannot deduce callable signature.");
+    }
+  }
+
+  template<typename ...Signature>
+  requires (sizeof...(Signature) != 0)
+  static void push(duk_context* ctx, auto&& func)
+  {
+    using DecayFunc = std::decay_t<Func>;
 
     // TODO: Use index property instead of named property?
     static constexpr auto funcPropName = DUKCPP_DETAIL_INTERNAL_NAME("func");
@@ -379,9 +401,9 @@ struct type_traits<T>
   [[nodiscard]]
   static auto get(duk_context* ctx, duk_idx_t idx)
   {
-    using Func = boost::callable_traits::function_type_t<func_t>;
+    using Signature = boost::callable_traits::function_type_t<Func>;
 
-    return safe_function_handle<Func>(handle(ctx, idx));
+    return safe_function_handle<Signature>(handle(ctx, idx));
   }
 
   [[nodiscard]]

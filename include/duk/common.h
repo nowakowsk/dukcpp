@@ -95,6 +95,21 @@ template<typename T>
 using member_type_t = member_type<T>::type;
 
 
+// expand_pack
+
+template<typename Tuple>
+struct expand_pack;
+
+template<template<typename...> typename Tuple, typename ...Ts>
+struct expand_pack<Tuple<Ts...>>
+{
+  static decltype(auto) run(auto&& func, auto&& ...params)
+  {
+    return func.template operator()<Ts...>(std::forward<decltype(params)>(params)...);
+  }
+};
+
+
 } // namespace detail
 
 

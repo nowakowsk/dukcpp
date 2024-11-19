@@ -1,5 +1,6 @@
 #include "character.h"
 #include "common.h"
+#include "functor.h"
 #include "inheritance.h"
 #include "lifetime.h"
 #include "vector.h"
@@ -287,26 +288,11 @@ TEST_CASE_METHOD(DukCppTest, "Register overloaded function (value arguments)")
 }
 
 
-TEST_CASE_METHOD(DukCppTest, "Register functor")
+TEST_CASE_METHOD(DukCppTest, "Register functor (with duk::callable_traits)")
 {
-  struct Functor
-  {
-    constexpr Functor()
-    {
-    }
-
-    bool operator()() const
-    {
-      return true;
-    }
-
-    int operator()(int x) const
-    {
-      return x;
-    }
-  };
-
   duk_push_global_object(ctx_);
+
+  duk::put_function<makeFunctor>(ctx_, -1, "makeFunctor");
 
   SECTION("constexpr")
   {
@@ -322,7 +308,7 @@ TEST_CASE_METHOD(DukCppTest, "Register functor")
     duk::put_function<bool(), int(int)>(ctx_, -1, "func", f);
   }
 
-  duk_pop(ctx_);
+  duk_pop(ctx_); // duk_push_global_object
 
   duk_eval_string(ctx_, "func()");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
@@ -330,6 +316,82 @@ TEST_CASE_METHOD(DukCppTest, "Register functor")
 
   duk_eval_string(ctx_, "func(10)");
   REQUIRE(duk::get<int>(ctx_, -1) == 10);
+  duk_pop(ctx_);
+
+  // Functor returned from a function is treated as a Function because it specializes duk::callable_traits.
+  duk_eval_string(ctx_, "var f = makeFunctor();");
+
+  duk_eval_string(ctx_, "f instanceof Function");
+  REQUIRE(duk::get<bool>(ctx_, -1) == true);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "f()");
+  REQUIRE(duk::get<bool>(ctx_, -1) == true);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "f(20)");
+  REQUIRE(duk::get<int>(ctx_, -1) == 20);
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Register functor (without duk::callable_traits)")
+{
+  // This class shadows Functor defined globally in functor.h.
+  struct Functor
+  {
+    constexpr Functor() = default;
+
+    bool operator()() const
+    {
+      return true;
+    }
+
+    int operator()(int x) const
+    {
+      return x;
+    }
+  };
+
+  static constexpr auto makeFunctor = []() { return Functor{}; };
+
+  duk_push_global_object(ctx_);
+
+  duk::put_function<makeFunctor>(ctx_, -1, "makeFunctor");
+
+  SECTION("constexpr")
+  {
+    duk::put_function<
+      duk::function_descriptor<Functor{}, bool(), int(int)>
+    >(ctx_, -1, "func");
+  }
+
+  SECTION("non-constexpr")
+  {
+    Functor f;
+
+    duk::put_function<bool(), int(int)>(ctx_, -1, "func", f);
+  }
+
+  duk_pop(ctx_); // duk_push_global_object
+
+  duk_eval_string(ctx_, "func()");
+  REQUIRE(duk::get<bool>(ctx_, -1) == true);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "func(10)");
+  REQUIRE(duk::get<int>(ctx_, -1) == 10);
+  duk_pop(ctx_);
+
+  // Functor returned from a function is treated as an Object because it doesn't specialize duk::callable_traits.
+  duk_eval_string(ctx_, "var f = makeFunctor();");
+
+  duk_eval_string(ctx_, "f instanceof Object");
+  REQUIRE(duk::get<bool>(ctx_, -1) == true);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, "f instanceof Function");
+  REQUIRE(duk::get<bool>(ctx_, -1) == false);
   duk_pop(ctx_);
 }
 

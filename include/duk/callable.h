@@ -12,12 +12,31 @@ template<typename T>
 struct callable_traits;
 
 
+// callable
+
 template<typename T>
 concept callable = requires
 {
   typename callable_traits<T>::type;
 };
 
+template<typename T>
+using callable_traits_t = callable_traits<T>::type;
+
+
+// callable_traits_signature_pack
+
+template<typename T>
+concept has_callable_traits_signature_pack = requires
+{
+  typename callable_traits<T>::signature_pack;
+};
+
+template<typename T>
+using callable_traits_signature_pack = callable_traits<T>::signature_pack;
+
+
+// as_function
 
 template<typename T>
 struct as_function;
