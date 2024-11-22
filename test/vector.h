@@ -6,7 +6,7 @@
 
 struct Vector
 {
-  Vector();
+  Vector() = default;
   Vector(float x, float y);
 
   bool operator==(const Vector& other) const;

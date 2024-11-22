@@ -3,11 +3,6 @@
 #include <cmath>
 
 
-Vector::Vector()
-{
-}
-
-
 Vector::Vector(float x, float y) :
   x(x),
   y(y)
@@ -69,7 +64,7 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
 {
   duk::push_function<
     duk::ctor<Vector>,
-    duk::ctor<Vector, int, int>
+    duk::ctor<Vector, float, float>
   >(ctx);
 
   duk_push_object(ctx);
