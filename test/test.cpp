@@ -777,19 +777,24 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
 }
 
 
-TEST_CASE_METHOD(DukCppTest, "Manual finalization")
+TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Manual finalization", "",
+  Lifetime,
+  CallableLifetime
+)
 {
-  duk_push_global_object(ctx_);
+  auto& ctx = DukCppTest::ctx_;
+
+  duk_push_global_object(ctx);
 
   Lifetime::Observer observer;
-  duk::push(ctx_, Lifetime{observer});
+  duk::push(ctx, TestType{observer});
 
   REQUIRE(observer.ctorDtorCountMatch() == false);
-  REQUIRE(duk::finalize(ctx_, -1) == true);
+  REQUIRE(duk::finalize(ctx, -1) == true);
   REQUIRE(observer.ctorDtorCountMatch() == true);
 
   // Double-free
-  REQUIRE(duk::finalize(ctx_, -1) == false);
+  REQUIRE(duk::finalize(ctx, -1) == false);
 }
 
 
@@ -873,6 +878,8 @@ TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Ranges (std::input_iterator)", ""
   duk::safe_input_range<char>
 )
 {
+  auto& ctx = DukCppTest::ctx_;
+
   const char* containerCode = nullptr;
   if constexpr (std::is_same_v<decltype(*std::declval<TestType>().begin()), int>)
   {
@@ -904,8 +911,8 @@ TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Ranges (std::input_iterator)", ""
     )__";
   }
 
-  duk_eval_string(DukCppTest::ctx_, containerCode);
-  auto range = duk::get<TestType>(DukCppTest::ctx_, -1);
+  duk_eval_string(ctx, containerCode);
+  auto range = duk::get<TestType>(ctx, -1);
 
   auto iter = range.begin();
   REQUIRE(*iter == 0);

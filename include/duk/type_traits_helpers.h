@@ -17,6 +17,7 @@ template<typename T>
 struct type_traits;
 
 static bool finalize_object(duk_context* ctx, duk_idx_t idx);
+static bool finalize_callable(duk_context* ctx, duk_idx_t idx);
 
 } // namespace detail
 
@@ -66,7 +67,8 @@ decltype(auto) safe_get(duk_context* ctx, duk_idx_t idx)
 
 inline static bool finalize(duk_context* ctx, duk_idx_t idx)
 {
-  return detail::finalize_object(ctx, idx);
+  return detail::finalize_object(ctx, idx) ||
+         detail::finalize_callable(ctx, idx);
 }
 
 

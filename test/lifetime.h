@@ -1,8 +1,12 @@
 #ifndef DUKCPP_TEST_LIFETIME_H
 #define DUKCPP_TEST_LIFETIME_H
 
+#include <duk/callable.h>
 
-struct Lifetime final
+
+// Lifetime
+
+struct Lifetime
 {
   struct Observer final
   {
@@ -72,6 +76,28 @@ struct Lifetime final
 
   Observer* observer = nullptr;
 };
+
+
+// CallableLifetime
+
+struct CallableLifetime : public Lifetime
+{
+  void operator()()
+  {
+  }
+};
+
+
+namespace duk
+{
+
+template<>
+struct callable_traits<CallableLifetime>
+{
+  using type = CallableLifetime;
+};
+
+} // namespace duk
 
 
 #endif // DUKCPP_TEST_LIFETIME_H

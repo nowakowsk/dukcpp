@@ -1,7 +1,7 @@
 #ifndef DUKCPP_CALLABLE_STD_FUNCTION_H
 #define DUKCPP_CALLABLE_STD_FUNCTION_H
 
-#include <duk/common.h>
+#include <duk/callable.h>
 #include <functional>
 
 

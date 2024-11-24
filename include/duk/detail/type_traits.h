@@ -282,7 +282,10 @@ inline static bool finalize_object(duk_context* ctx, duk_idx_t idx)
 }
 
 
-// TODO: finalize
+// TODO: Use index property instead of named property?
+static constexpr auto type_traits_func_info_name = std::string_view(DUKCPP_DETAIL_INTERNAL_NAME("func"));
+
+
 template<callable T>
 struct type_traits<T>
 {
@@ -322,13 +325,13 @@ struct type_traits<T>
   {
     using DecayFunc = std::decay_t<Func>;
 
-    // TODO: Use index property instead of named property?
-    static constexpr auto funcPropName = DUKCPP_DETAIL_INTERNAL_NAME("func");
-
     static constexpr auto wrapper = [](duk_context* ctx) -> duk_ret_t
     {
       duk_push_current_function(ctx);
-      duk_get_prop_string(ctx, -1, funcPropName);
+
+      if (!get_prop_string(ctx, -1, type_traits_func_info_name))
+        throw error(ctx, "Called invalid or finalized function.");
+
       auto funcPtr = static_cast<DecayFunc*>(duk_get_pointer(ctx, -1));
       duk_pop_2(ctx);
 
@@ -354,11 +357,14 @@ struct type_traits<T>
     static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
     {
       scoped_pop _(ctx); // duk_get_prop_string
-      duk_get_prop_string(ctx, 0, funcPropName);
+      if (!get_prop_string(ctx, 0, type_traits_func_info_name))
+        return 0;
 
       auto funcPtr = static_cast<DecayFunc*>(duk_get_pointer(ctx, -1));
 
       free(ctx, funcPtr);
+
+      del_prop_string(ctx, 0, type_traits_func_info_name);
 
       return 0;
     };
@@ -368,7 +374,7 @@ struct type_traits<T>
     duk_push_c_function(ctx, wrapper, DUK_VARARGS);
 
     duk_push_pointer(ctx, funcPtr);
-    duk_put_prop_string(ctx, -2, funcPropName);
+    put_prop_string(ctx, -2, type_traits_func_info_name);
 
     duk_push_c_function(ctx, finalizer, 2);
     duk_set_finalizer(ctx, -2);
@@ -388,6 +394,22 @@ struct type_traits<T>
     return duk_is_function(ctx, idx);
   }
 };
+
+
+inline static bool finalize_callable(duk_context* ctx, duk_idx_t idx)
+{
+  scoped_pop _(ctx); // duk_get_prop_string
+  if (!get_prop_string(ctx, idx, type_traits_func_info_name))
+    return false;
+
+  duk_get_finalizer(ctx, idx - 1);
+  duk_dup(ctx, idx - 2);
+
+  scoped_pop __(ctx); // duk_call
+  duk_call(ctx, 1);
+
+  return true;
+}
 
 
 template<typename ...Ts>
