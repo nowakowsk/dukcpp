@@ -6,6 +6,7 @@
 #include <duk/error.h>
 #include <duk/function_handle.h>
 #include <duk/range.h>
+#include <duk/scoped_pop.h>
 #include <duk/string_traits.h>
 #include <duk/type_adapter.h>
 #include <boost/callable_traits.hpp>
@@ -32,6 +33,8 @@ struct ObjectInfo
 
   [[nodiscard]]
   virtual bool checkType(std::size_t typeId) noexcept = 0;
+
+  virtual void finalize() noexcept = 0;
 
   // What's happening here is quite hard to follow, so here is a short explanation.
   //
@@ -97,6 +100,11 @@ struct ObjectInfoImpl : ObjectInfo
   bool checkType(std::size_t typeId) noexcept override
   {
     return getImpl(typeId, nullptr);
+  }
+
+  void finalize() noexcept override
+  {
+    free(ctx_, this);
   }
 
 private:
@@ -172,12 +180,13 @@ private:
 };
 
 
+// TODO: Use index property instead of named property?
+static constexpr auto type_traits_object_info_name = std::string_view(DUKCPP_DETAIL_INTERNAL_NAME("objInfo"));
+
+
 template<typename T>
 struct type_traits
 {
-  // TODO: Use index property instead of named property?
-  static constexpr auto objInfoName = DUKCPP_DETAIL_INTERNAL_NAME("objInfo");
-
   using DecayT = std::decay_t<T>;
 
   static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
@@ -188,9 +197,11 @@ struct type_traits
 
     static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
     {
-      duk_get_prop_string(ctx, 0, objInfoName);
+      scoped_pop _(ctx); // get_prop_string
+      if (!get_prop_string(ctx, 0, type_traits_object_info_name))
+        return 0;
+
       auto objInfo = static_cast<ObjectInfoImplT*>(duk_get_pointer(ctx, -1));
-      duk_pop(ctx);
 
       free(ctx, objInfo);
 
@@ -205,7 +216,7 @@ struct type_traits
       duk_push_object(ctx);
 
     duk_push_pointer(ctx, objInfo);
-    duk_put_prop_string(ctx, -2, objInfoName);
+    put_prop_string(ctx, -2, type_traits_object_info_name);
 
     duk_push_c_function(ctx, finalizer, 2);
     duk_set_finalizer(ctx, -2);
@@ -231,9 +242,11 @@ struct type_traits
     // TODO:
     // Accessing property here isn't ideal since, in most cases, it's already been done in check_type.
     // I am not sure how bad it is for the performance, but could be significant. Consider optimizing it somehow.
-    duk_get_prop_string(ctx, idx, objInfoName);
+    scoped_pop _(ctx); // get_prop_string
+    if (!get_prop_string(ctx, idx, type_traits_object_info_name))
+      throw error(ctx, "Accessing invalid or finalized object.");
+
     auto objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
-    duk_pop(ctx);
 
     return objInfo->get<DecayT>();
   }
@@ -244,70 +257,32 @@ struct type_traits
     if (!duk_is_object(ctx, idx))
       return false;
 
-    if (!duk_get_prop_string(ctx, idx, objInfoName))
-    {
-      duk_pop(ctx);
+    scoped_pop _(ctx); // get_prop_string
+    if (!get_prop_string(ctx, idx, type_traits_object_info_name))
       return false;
-    }
+
     auto objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
-    duk_pop(ctx);
 
     return objInfo->checkType(type_id<DecayT>());
   }
 };
 
 
-template<typename ...Ts>
-struct type_traits<array_input_range<Ts...>>
+inline static bool finalize_object(duk_context* ctx, duk_idx_t idx)
 {
-  [[nodiscard]]
-  static array_input_range<Ts...> get(duk_context* ctx, duk_idx_t idx)
-  {
-    return { ctx, idx };
-  }
+  scoped_pop _(ctx); // duk_get_prop_string
+  if (!get_prop_string(ctx, idx, type_traits_object_info_name))
+    return false;
 
-  [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
-  {
-    return duk_is_array(ctx, idx);
-  }
-};
+  auto objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
+
+  objInfo->finalize();
+
+  return del_prop_string(ctx, idx - 1, type_traits_object_info_name);
+}
 
 
-template<typename ...Ts>
-struct type_traits<symbol_input_range<Ts...>>
-{
-  [[nodiscard]]
-  static symbol_input_range<Ts...> get(duk_context* ctx, duk_idx_t idx)
-  {
-    return { ctx, idx };
-  }
-
-  [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
-  {
-    return duk_is_object(ctx, idx);
-  }
-};
-
-
-template<typename ...Ts>
-struct type_traits<input_range<Ts...>>
-{
-  [[nodiscard]]
-  static input_range<Ts...> get(duk_context* ctx, duk_idx_t idx)
-  {
-    return { ctx, idx };
-  }
-
-  [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
-  {
-    return duk_is_array(ctx, idx) || duk_is_object(ctx, idx);
-  }
-};
-
-
+// TODO: finalize
 template<callable T>
 struct type_traits<T>
 {
@@ -378,9 +353,10 @@ struct type_traits<T>
 
     static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
     {
+      scoped_pop _(ctx); // duk_get_prop_string
       duk_get_prop_string(ctx, 0, funcPropName);
+
       auto funcPtr = static_cast<DecayFunc*>(duk_get_pointer(ctx, -1));
-      duk_pop(ctx);
 
       free(ctx, funcPtr);
 
@@ -410,6 +386,57 @@ struct type_traits<T>
   static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_function(ctx, idx);
+  }
+};
+
+
+template<typename ...Ts>
+struct type_traits<array_input_range<Ts...>>
+{
+  [[nodiscard]]
+  static array_input_range<Ts...> get(duk_context* ctx, duk_idx_t idx)
+  {
+    return { ctx, idx };
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
+  {
+    return duk_is_array(ctx, idx);
+  }
+};
+
+
+template<typename ...Ts>
+struct type_traits<symbol_input_range<Ts...>>
+{
+  [[nodiscard]]
+  static symbol_input_range<Ts...> get(duk_context* ctx, duk_idx_t idx)
+  {
+    return { ctx, idx };
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
+  {
+    return duk_is_object(ctx, idx);
+  }
+};
+
+
+template<typename ...Ts>
+struct type_traits<input_range<Ts...>>
+{
+  [[nodiscard]]
+  static input_range<Ts...> get(duk_context* ctx, duk_idx_t idx)
+  {
+    return { ctx, idx };
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
+  {
+    return duk_is_array(ctx, idx) || duk_is_object(ctx, idx);
   }
 };
 

@@ -16,6 +16,8 @@ namespace detail
 template<typename T>
 struct type_traits;
 
+static bool finalize_object(duk_context* ctx, duk_idx_t idx);
+
 } // namespace detail
 
 
@@ -31,6 +33,14 @@ template<typename T>
 void push(duk_context* ctx, T&& value, auto&&... args)
 {
   detail::type_traits<T>::push(ctx, std::forward<T>(value), std::forward<decltype(args)>(args)...);
+}
+
+
+template<typename T>
+void put_prop(duk_context* ctx, duk_idx_t idx, std::string_view name, T&& value, auto&&... args)
+{
+  push(ctx, std::forward<T>(value), std::forward<decltype(args)>(args)...);
+  duk_put_prop_lstring(ctx, idx - 1, name.data(), name.length());
 }
 
 
@@ -51,6 +61,12 @@ decltype(auto) safe_get(duk_context* ctx, duk_idx_t idx)
     throw error(ctx, "unexpected type");
 
   return get<T>(ctx, idx);
+}
+
+
+inline static bool finalize(duk_context* ctx, duk_idx_t idx)
+{
+  return detail::finalize_object(ctx, idx);
 }
 
 

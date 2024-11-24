@@ -110,6 +110,26 @@ struct expand_pack<Tuple<Ts...>>
 };
 
 
+// Duktape helpers
+
+inline static bool get_prop_string(duk_context *ctx, duk_idx_t idx, std::string_view name)
+{
+  return duk_get_prop_lstring(ctx, idx, name.data(), name.length());
+}
+
+
+inline static bool put_prop_string(duk_context *ctx, duk_idx_t idx, std::string_view name)
+{
+  return duk_put_prop_lstring(ctx, idx, name.data(), name.length());
+}
+
+
+inline static bool del_prop_string(duk_context *ctx, duk_idx_t idx, std::string_view name)
+{
+  return duk_del_prop_lstring(ctx, idx, name.data(), name.length());
+}
+
+
 } // namespace detail
 
 

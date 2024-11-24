@@ -79,7 +79,9 @@ cmake -DDUKCPP_DUKTAPE_PATH="path/to/duktape/source/code" ...
 
 ## Reserved names
 
-dukcpp reserves `duk::` namespace, and macro names starting with `DUKCPP_`. `duk::detail::` namespace contains implementation details, and should not be used.
+dukcpp reserves `duk` namespace, and macro names starting with `DUKCPP_`.
+
+`duk::detail` namespace and macros starting with `DUKCPP_DETAIL_` are reserved for implementation details, and should not be used in user code.
 
 
 # Quick start
@@ -501,6 +503,11 @@ Now whenever an ES function expects `MyClass` parameter, it will also accept `My
 In ES context, it is up to the user to make sure the prototype chain of bound classes reflects their inheritance relations in C++.
 
 See `test/inheritance.cpp` for an example.
+
+
+### Finalization
+
+TODO
 
 
 ## Ranges and iterators

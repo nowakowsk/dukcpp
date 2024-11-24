@@ -28,6 +28,7 @@ duk_idx_t push_function(duk_context* ctx)
 }
 
 
+// TODO: Rename to duk::put_prop_function
 template<typename ...FuncDesc>
 void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
 {

@@ -401,10 +401,11 @@ TEST_CASE_METHOD(DukCppTest, "Check object copy counts")
   Lifetime::Observer observer;
 
   duk_push_global_object(ctx_);
-  duk::put_function(ctx_, -1, "func", Lifetime{observer});
-  duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "func()");
+  duk::put_prop(ctx_, -1, "func", Lifetime{observer});
+
+  duk_pop(ctx_); // duk_push_global_object
+
   ctx_.release();
 
   REQUIRE(observer.countersWithinLimits({
@@ -773,6 +774,22 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
   assertEq("runMethodC(final);", "FinalC");
 
   REQUIRE_THROWS(duk_eval_string(ctx_, "base.methodC();"));
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Manual finalization")
+{
+  duk_push_global_object(ctx_);
+
+  Lifetime::Observer observer;
+  duk::push(ctx_, Lifetime{observer});
+
+  REQUIRE(observer.ctorDtorCountMatch() == false);
+  REQUIRE(duk::finalize(ctx_, -1) == true);
+  REQUIRE(observer.ctorDtorCountMatch() == true);
+
+  // Double-free
+  REQUIRE(duk::finalize(ctx_, -1) == false);
 }
 
 

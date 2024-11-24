@@ -70,10 +70,6 @@ struct Lifetime final
     return *this;
   }
 
-  void operator()() const noexcept
-  {
-  }
-
   Observer* observer = nullptr;
 };
 
