@@ -356,17 +356,18 @@ struct type_traits<T>
 
     static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
     {
-      scoped_pop _(ctx); // duk_get_prop_string
       if (!get_prop_string(ctx, 0, type_traits_func_info_name))
-        return 0;
+      {
+        duk_push_boolean(ctx, false);
+        return 1;
+      }
 
       auto funcPtr = static_cast<DecayFunc*>(duk_get_pointer(ctx, -1));
 
       free(ctx, funcPtr);
 
-      del_prop_string(ctx, 0, type_traits_func_info_name);
-
-      return 0;
+      duk_push_boolean(ctx, del_prop_string(ctx, 0, type_traits_func_info_name));
+      return 1;
     };
 
     auto* funcPtr = make<DecayFunc>(ctx, std::forward<decltype(func)>(func));
@@ -408,7 +409,7 @@ inline static bool finalize_callable(duk_context* ctx, duk_idx_t idx)
   scoped_pop __(ctx); // duk_call
   duk_call(ctx, 1);
 
-  return true;
+  return duk_get_boolean(ctx, -1);
 }
 
 
