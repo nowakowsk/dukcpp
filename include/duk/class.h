@@ -35,7 +35,8 @@ concept has_class_traits_base = requires
 template<typename T>
 struct class_traits_base
 {
-  using type = void; // TODO: See if this can be removed.
+  // void base type means that there is no base. I don't like it, but it makes things easier.
+  using type = void;
 };
 
 template<has_class_traits_base T>

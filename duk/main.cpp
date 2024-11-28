@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
     auto source = readFile(options.input);
 
     duk_push_global_object(ctx);
-    duk::put_function<print>(ctx, -1, "print");
+    duk::put_prop_function<print>(ctx, -1, "print");
     duk_pop(ctx);
 
     duk_push_string(ctx, options.input.c_str());

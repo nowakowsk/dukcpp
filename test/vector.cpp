@@ -71,7 +71,7 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
 
   auto prototypeHandle = duk_get_heapptr(ctx, -1);
 
-  duk::put_function<
+  duk::put_prop_function<
     static_cast<void(Vector::*)(float)>(&Vector::add),
     static_cast<void(Vector::*)(const Vector&)>(&Vector::add)
   >(ctx, -1, "add");
@@ -79,7 +79,7 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
   duk::def_prop<&Vector::x>(ctx, -1, "x");
   duk::def_prop<&Vector::y>(ctx, -1, "y");
 
-  duk::put_function<
+  duk::put_prop_function<
     &Vector::length
   >(ctx, -1, "length");
 
@@ -88,7 +88,7 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
   duk_put_prop_string(ctx, idx - 1, "Vector");
 
   static constexpr auto add = [](const Vector& lhs, const Vector& rhs) { return lhs + rhs; };
-  duk::put_function<add>(ctx, idx, "addVector");
+  duk::put_prop_function<add>(ctx, idx, "addVector");
 
   duk::class_traits<Vector>::prototype = prototypeHandle;
 

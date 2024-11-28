@@ -46,7 +46,7 @@ void registerInhBase(duk_context* ctx, duk_idx_t idx)
 
   auto prototypeHandle = duk_get_heapptr(ctx, -1);
 
-  duk::put_function<&InhBase::methodA>(ctx, -1, "methodA");
+  duk::put_prop_function<&InhBase::methodA>(ctx, -1, "methodA");
 
   duk_put_prop_string(ctx, -2, "prototype");
 
@@ -66,7 +66,7 @@ void registerInhDer(duk_context* ctx, duk_idx_t idx)
 
   auto prototypeHandle = duk_get_heapptr(ctx, -1);
 
-  duk::put_function<&InhDer::methodB>(ctx, -1, "methodB");
+  duk::put_prop_function<&InhDer::methodB>(ctx, -1, "methodB");
 
   duk_push_heapptr(ctx, duk::class_traits<InhBase>::prototype);
   duk_set_prototype(ctx, -2);
@@ -89,7 +89,7 @@ void registerInhFinal(duk_context* ctx, duk_idx_t idx)
 
   auto prototypeHandle = duk_get_heapptr(ctx, -1);
 
-  duk::put_function<&InhFinal::methodC>(ctx, -1, "methodC");
+  duk::put_prop_function<&InhFinal::methodC>(ctx, -1, "methodC");
 
   duk_push_heapptr(ctx, duk::class_traits<InhDer>::prototype);
   duk_set_prototype(ctx, -2);

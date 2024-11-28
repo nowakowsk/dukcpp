@@ -74,7 +74,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (value arguments)")
   };
 
   duk_push_global_object(ctx_);
-  duk::put_function<add>(ctx_, -1, "add");
+  duk::put_prop_function<add>(ctx_, -1, "add");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "add(1, 2)");
@@ -90,7 +90,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (reference arguments)")
   };
 
   duk_push_global_object(ctx_);
-  duk::put_function<add>(ctx_, -1, "add");
+  duk::put_prop_function<add>(ctx_, -1, "add");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "add(1, 2)");
@@ -101,9 +101,9 @@ TEST_CASE_METHOD(DukCppTest, "Register function (reference arguments)")
 TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: int")
 {
   duk_push_global_object(ctx_);
-  duk::put_function<identity<int, int>>(ctx_, -1, "int_int");
-  duk::put_function<identity<int, const int&>>(ctx_, -1, "int_crefint");
-  duk::put_function<identity<const int&, const int&>>(ctx_, -1, "crefint_crefint");
+  duk::put_prop_function<identity<int, int>>(ctx_, -1, "int_int");
+  duk::put_prop_function<identity<int, const int&>>(ctx_, -1, "int_crefint");
+  duk::put_prop_function<identity<const int&, const int&>>(ctx_, -1, "crefint_crefint");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "int_int(-5)");
@@ -123,9 +123,9 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: int"
 TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: unsigned int")
 {
   duk_push_global_object(ctx_);
-  duk::put_function<identity<unsigned int, unsigned int>>(ctx_, -1, "uint_uint");
-  duk::put_function<identity<unsigned int, const unsigned int&>>(ctx_, -1, "uint_crefuint");
-  duk::put_function<identity<const unsigned int&, const unsigned int&>>(ctx_, -1, "crefuint_crefuint");
+  duk::put_prop_function<identity<unsigned int, unsigned int>>(ctx_, -1, "uint_uint");
+  duk::put_prop_function<identity<unsigned int, const unsigned int&>>(ctx_, -1, "uint_crefuint");
+  duk::put_prop_function<identity<const unsigned int&, const unsigned int&>>(ctx_, -1, "crefuint_crefuint");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "uint_uint(5)");
@@ -145,9 +145,9 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: unsi
 TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: float")
 {
   duk_push_global_object(ctx_);
-  duk::put_function<identity<float, float>>(ctx_, -1, "float_float");
-  duk::put_function<identity<float, const float&>>(ctx_, -1, "float_creffloat");
-  duk::put_function<identity<const float&, const float&>>(ctx_, -1, "creffloat_creffloat");
+  duk::put_prop_function<identity<float, float>>(ctx_, -1, "float_float");
+  duk::put_prop_function<identity<float, const float&>>(ctx_, -1, "float_creffloat");
+  duk::put_prop_function<identity<const float&, const float&>>(ctx_, -1, "creffloat_creffloat");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "float_float(1)");
@@ -167,9 +167,9 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: floa
 TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: bool")
 {
   duk_push_global_object(ctx_);
-  duk::put_function<identity<bool, bool>>(ctx_, -1, "bool_bool");
-  duk::put_function<identity<bool, const bool&>>(ctx_, -1, "bool_crefbool");
-  duk::put_function<identity<const bool&, const bool&>>(ctx_, -1, "crefbool_crefbool");
+  duk::put_prop_function<identity<bool, bool>>(ctx_, -1, "bool_bool");
+  duk::put_prop_function<identity<bool, const bool&>>(ctx_, -1, "bool_crefbool");
+  duk::put_prop_function<identity<const bool&, const bool&>>(ctx_, -1, "crefbool_crefbool");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "bool_bool(true)");
@@ -194,9 +194,9 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: enum
   };
 
   duk_push_global_object(ctx_);
-  duk::put_function<identity<Enum, Enum>>(ctx_, -1, "enum_enum");
-  duk::put_function<identity<Enum, const Enum&>>(ctx_, -1, "enum_crefenum");
-  duk::put_function<identity<const Enum&, const Enum&>>(ctx_, -1, "crefenum_crefenum");
+  duk::put_prop_function<identity<Enum, Enum>>(ctx_, -1, "enum_enum");
+  duk::put_prop_function<identity<Enum, const Enum&>>(ctx_, -1, "enum_crefenum");
+  duk::put_prop_function<identity<const Enum&, const Enum&>>(ctx_, -1, "crefenum_crefenum");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "enum_enum(0)");
@@ -216,9 +216,9 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: enum
 TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std::string")
 {
   duk_push_global_object(ctx_);
-  duk::put_function<identity<std::string, std::string>>(ctx_, -1, "string_string");
-  duk::put_function<identity<std::string, const std::string&>>(ctx_, -1, "string_crefstring");
-  duk::put_function<identity<const std::string&, const std::string&>>(ctx_, -1, "crefstring_crefstring");
+  duk::put_prop_function<identity<std::string, std::string>>(ctx_, -1, "string_string");
+  duk::put_prop_function<identity<std::string, const std::string&>>(ctx_, -1, "string_crefstring");
+  duk::put_prop_function<identity<const std::string&, const std::string&>>(ctx_, -1, "crefstring_crefstring");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "string_string('test')");
@@ -238,9 +238,9 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std:
 TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std::string_view")
 {
   duk_push_global_object(ctx_);
-  duk::put_function<identity<std::string_view, std::string_view>>(ctx_, -1, "string_string");
-  duk::put_function<identity<std::string_view, const std::string_view&>>(ctx_, -1, "string_crefstring");
-  duk::put_function<identity<const std::string_view&, const std::string_view&>>(ctx_, -1, "crefstring_crefstring");
+  duk::put_prop_function<identity<std::string_view, std::string_view>>(ctx_, -1, "string_string");
+  duk::put_prop_function<identity<std::string_view, const std::string_view&>>(ctx_, -1, "string_crefstring");
+  duk::put_prop_function<identity<const std::string_view&, const std::string_view&>>(ctx_, -1, "crefstring_crefstring");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "(string_string('test'))");
@@ -260,7 +260,7 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std:
 TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: const char*")
 {
   duk_push_global_object(ctx_);
-  duk::put_function<identity<const char*, const char*>>(ctx_, -1, "constchar_constchar");
+  duk::put_prop_function<identity<const char*, const char*>>(ctx_, -1, "constchar_constchar");
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "constchar_constchar('test')");
@@ -272,7 +272,7 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: cons
 TEST_CASE_METHOD(DukCppTest, "Register overloaded function (value arguments)")
 {
   duk_push_global_object(ctx_);
-  duk::put_function<
+  duk::put_prop_function<
     static_cast<int(*)(int, int)>(add),
     static_cast<std::string(*)(std::string_view, std::string_view)>(add)
   >(ctx_, -1, "add");
@@ -292,11 +292,11 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (with duk::callable_traits)")
 {
   duk_push_global_object(ctx_);
 
-  duk::put_function<makeFunctor>(ctx_, -1, "makeFunctor");
+  duk::put_prop_function<makeFunctor>(ctx_, -1, "makeFunctor");
 
   SECTION("constexpr")
   {
-    duk::put_function<
+    duk::put_prop_function<
       duk::function_descriptor<Functor{}, bool(), int(int)>
     >(ctx_, -1, "func");
   }
@@ -305,7 +305,7 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (with duk::callable_traits)")
   {
     Functor f;
 
-    duk::put_function<bool(), int(int)>(ctx_, -1, "func", f);
+    duk::put_prop_function<bool(), int(int)>(ctx_, -1, "func", f);
   }
 
   duk_pop(ctx_); // duk_push_global_object
@@ -357,11 +357,11 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (without duk::callable_traits)")
 
   duk_push_global_object(ctx_);
 
-  duk::put_function<makeFunctor>(ctx_, -1, "makeFunctor");
+  duk::put_prop_function<makeFunctor>(ctx_, -1, "makeFunctor");
 
   SECTION("constexpr")
   {
-    duk::put_function<
+    duk::put_prop_function<
       duk::function_descriptor<Functor{}, bool(), int(int)>
     >(ctx_, -1, "func");
   }
@@ -370,7 +370,7 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (without duk::callable_traits)")
   {
     Functor f;
 
-    duk::put_function<bool(), int(int)>(ctx_, -1, "func", f);
+    duk::put_prop_function<bool(), int(int)>(ctx_, -1, "func", f);
   }
 
   duk_pop(ctx_); // duk_push_global_object
@@ -429,7 +429,7 @@ TEST_CASE_METHOD(DukCppTest, "Register lambda with capture list")
   };
 
   duk_push_global_object(ctx_);
-  duk::put_function(ctx_, -1, "multiply", multiply);
+  duk::put_prop_function(ctx_, -1, "multiply", multiply);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, "multiply(10)");
@@ -462,7 +462,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (function argument)")
   };
 
   duk_push_global_object(ctx_);
-  duk::put_function(ctx_, -1, "multiply", multiply);
+  duk::put_prop_function(ctx_, -1, "multiply", multiply);
   duk_pop(ctx_);
 
   duk_eval_string(ctx_, R"__(
@@ -714,17 +714,17 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
   registerInhDer(ctx_, -1);
   registerInhFinal(ctx_, -1);
 
-  duk::put_function<std::make_shared<InhBase>>(ctx_, -1, "makeInhBase");
-  duk::put_function<std::make_shared<InhDer>>(ctx_, -1, "makeInhDer");
-  duk::put_function<std::make_shared<InhFinal>>(ctx_, -1, "makeInhFinal");
+  duk::put_prop_function<std::make_shared<InhBase>>(ctx_, -1, "makeInhBase");
+  duk::put_prop_function<std::make_shared<InhDer>>(ctx_, -1, "makeInhDer");
+  duk::put_prop_function<std::make_shared<InhFinal>>(ctx_, -1, "makeInhFinal");
 
-  duk::put_function<runMethodA>(ctx_, -1, "runMethodA");
-  duk::put_function<runMethodB>(ctx_, -1, "runMethodB");
-  duk::put_function<runMethodC>(ctx_, -1, "runMethodC");
+  duk::put_prop_function<runMethodA>(ctx_, -1, "runMethodA");
+  duk::put_prop_function<runMethodB>(ctx_, -1, "runMethodB");
+  duk::put_prop_function<runMethodC>(ctx_, -1, "runMethodC");
 
-  duk::put_function<runMethodPtrA>(ctx_, -1, "runMethodPtrA");
-  duk::put_function<runMethodPtrB>(ctx_, -1, "runMethodPtrB");
-  duk::put_function<runMethodPtrC>(ctx_, -1, "runMethodPtrC");
+  duk::put_prop_function<runMethodPtrA>(ctx_, -1, "runMethodPtrA");
+  duk::put_prop_function<runMethodPtrB>(ctx_, -1, "runMethodPtrB");
+  duk::put_prop_function<runMethodPtrC>(ctx_, -1, "runMethodPtrC");
 
   duk_pop(ctx_); // Pop global object
 
@@ -990,8 +990,8 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
     return result;
   };
 
-  duk::put_function<sumRange>(ctx_, -1, "sumRange");
-  duk::put_function<sumRanges>(ctx_, -1, "sumRanges");
+  duk::put_prop_function<sumRange>(ctx_, -1, "sumRange");
+  duk::put_prop_function<sumRanges>(ctx_, -1, "sumRanges");
 
   duk_pop(ctx_); // Pop global object
 

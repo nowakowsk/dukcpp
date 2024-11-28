@@ -222,11 +222,11 @@ auto result = duk::get<int>(ctx, -1); // result equals 13
 
 For performance reasons, the first variant should be preferred whenever possible.
 
-dukcpp defines `duk::put_function` convenience function which puts functions directly into object properties. It also comes in two variants, just like `duk::push_function`.
+dukcpp defines `duk::put_prop_function` convenience function which puts functions directly into object properties. It also comes in two variants, just like `duk::push_function`.
 
 ```cpp
 duk_push_global_object(ctx);
-duk::put_function(ctx, -1, "add", add);
+duk::put_prop_function(ctx, -1, "add", add);
 ```
 
 Calling ES functions from C++ code is described in [Function handles](#function-handles) section.
@@ -243,7 +243,7 @@ void f(std::string);
 // ...
 
 duk_push_global_object(ctx);
-duk::put_function<
+duk::put_prop_function<
   static_cast<void(*)(int)>(f),
   static_cast<void(*)(std::string)>(f)
 >(ctx, -1, "f");
@@ -262,14 +262,14 @@ struct Functor
 // ...
 
 // Binding in constexpr context
-duk::put_function<
+duk::put_prop_function<
   duk::function_descriptor<Functor{}, void(int), void(std::string)>
 >(ctx, -1, "f");
 
 // Binding in non-constexpr context
 Functor f;
 
-duk::put_function<
+duk::put_prop_function<
   void(int), void(std::string)
 >(ctx, -1, "f", f);
 ```
@@ -294,7 +294,7 @@ Functor makeFunctor()
 // ...
 
 duk_push_global_object(ctx);
-duk::put_function<makeFunctor>(ctx, -1, "makeFunctor");
+duk::put_prop_function<makeFunctor>(ctx, -1, "makeFunctor");
 duk_eval_string(ctx, "makeFunctor() instanceof Function"); // evaluates to false
 ```
 
@@ -414,7 +414,7 @@ C++ objects used as writable properties need to be assignable.
 Class methods are bound just as regular functions:
 
 ```cpp
-duk::put_function<&Vector::length>(ctx, -1, "length");
+duk::put_prop_function<&Vector::length>(ctx, -1, "length");
 ```
 
 With prototype object ready, we complete the binding process by placing it inside the constructor function.
@@ -507,7 +507,7 @@ See `test/inheritance.cpp` for an example.
 
 ### Finalization
 
-TODO
+Objects and callables bound with dukcpp can be finalized manually, before GC decides to do so. This may be useful in case of large objects or resource wrappers (e.g. files, threads, etc.). Early finalization can be forced with `duk::finalize` function. Accessing finalized object will result in an error.
 
 
 ## Ranges and iterators

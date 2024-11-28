@@ -28,9 +28,8 @@ duk_idx_t push_function(duk_context* ctx)
 }
 
 
-// TODO: Rename to duk::put_prop_function
 template<typename ...FuncDesc>
-void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
+void put_prop_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
 {
   push_function<FuncDesc...>(ctx);
   duk_put_prop_lstring(ctx, idx - 1, name.data(), name.length());
@@ -38,7 +37,7 @@ void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
 
 
 template<auto ...Func>
-void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
+void put_prop_function(duk_context* ctx, duk_idx_t idx, std::string_view name)
 {
   push_function<Func...>(ctx);
   duk_put_prop_lstring(ctx, idx - 1, name.data(), name.length());
@@ -55,7 +54,7 @@ void push_function(duk_context* ctx, auto&& func)
 
 
 template<typename ...Signature>
-void put_function(duk_context* ctx, duk_idx_t idx, std::string_view name, auto&& func)
+void put_prop_function(duk_context* ctx, duk_idx_t idx, std::string_view name, auto&& func)
 {
   push_function<Signature...>(ctx, std::forward<decltype(func)>(func));
   duk_put_prop_lstring(ctx, idx - 1, name.data(), name.length());

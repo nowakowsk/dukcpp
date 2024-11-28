@@ -24,7 +24,8 @@ concept has_type_adapter = requires
 template<typename T>
 struct type_adapter_type
 {
-  using type = T; // TODO: See if this can be removed.
+  // T is an "adapter" to itself. I don't like it, but it makes things easier.
+  using type = T;
 };
 
 template<has_type_adapter T>
