@@ -342,9 +342,9 @@ enum class Type
 
 duk_push_object(ctx);
 duk::def_prop_enum(ctx, -1, "Type",
-  Type::A, "A",
-  Type::B, "B",
-  Type::C, "C"
+  "A", Type::A,
+  "B", Type::B,
+  "C", Type::C
 );
 
 // In ES context this results with:

@@ -808,8 +808,8 @@ TEST_CASE_METHOD(DukCppTest, "Enum")
   duk_push_global_object(ctx_);
 
   duk::def_prop_enum(ctx_, -1, "Enum",
-    Enum::E1, "E1",
-    Enum::E2, "E2"
+    "E1", Enum::E1,
+    "E2", Enum::E2
   );
 
   duk_pop(ctx_); // Pop global object

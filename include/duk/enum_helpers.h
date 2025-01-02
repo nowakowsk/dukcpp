@@ -16,7 +16,7 @@ namespace detail
 
 // TODO: This would be better as a lambda in push_enum, but it raises an internal compiler error in MSVC.
 // Bug report: https://developercommunity.visualstudio.com/t/ICE-when-recursively-calling-a-lambda-te/10794160
-void push_enum_item(duk_context* ctx, enumeration auto value, std::string_view name, auto&&... enum_items)
+void push_enum_item(duk_context* ctx, std::string_view name, auto value, auto&&... enum_items)
 {
   duk_push_lstring(ctx, name.data(), name.length());
   push(ctx, value);

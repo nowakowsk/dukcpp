@@ -26,9 +26,9 @@ void* registerCharacter(duk_context* ctx, duk_idx_t idx)
 
   // Enum definition goes into constructor function, not prototype object.
   duk::def_prop_enum(ctx, -1, "Type",
-    Character::Type::NEUTRAL, "NEUTRAL",
-    Character::Type::ENEMY, "ENEMY",
-    Character::Type::FRIEND, "FRIEND"
+    "NEUTRAL", Character::Type::NEUTRAL,
+    "ENEMY", Character::Type::ENEMY,
+    "FRIEND", Character::Type::FRIEND
   );
 
   duk_push_object(ctx);
