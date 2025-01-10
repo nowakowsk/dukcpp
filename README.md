@@ -12,7 +12,7 @@ While dukcpp does some heavy-lifting when it comes to making binding easier, it 
 - Support for strings (`const char*`, `std::string`, `std::string_view` and custom string types)
 - User type bindings
 - Function and functor bindings with parameter validation
-- Support for virtual functions and inheritance (no multiple inheritance)
+- Support for virtual functions and inheritance
 - Support for ranges and iterators
 - Support for custom memory allocators
 
@@ -104,7 +104,7 @@ More usage examples can be found in unit tests (`test/`) and duk project (`duk/`
 Duktape provides a set of `duk_push_*` and `duk_get_*` functions for working with value stack. Similarly, dukcpp wraps and gathers those functions under overloaded `duk::push` and `duk::get` functions. Those overloads handle a wide set of types, including callable and user-defines types.
 
 ```cpp
-duk::push(ctx, 10); // Pushed type is deduced from parameters.
+duk::push(ctx, 10); // Pushed type is deduced from function parameters.
 auto i = duk::get<int>(ctx, -1); // i equals 10
 
 duk::push<std::string>(ctx, "string"); // Pushed type is specified explicitly.
@@ -132,7 +132,7 @@ auto i = duk::safe_get<std::string>(ctx, -1); // throws (wrong type)
 
 - Integers
 - Floating-point
-- Enums (they are not really built-ins, but in dukcpp they are treated as integers)
+- Enums (dukcpp treats them as integers)
 - `bool`
 
 
@@ -175,7 +175,7 @@ static_assert(duk::string_type<MyString>);
 
 ## User types
 
-With dukcpp, just about any copyable or movable object can be pushed to ES context, without any additional work on user's part.
+With dukcpp, any copyable or movable object can be pushed to ES context, without any additional work on user's part.
 
 ```cpp
 struct S {};
@@ -185,7 +185,7 @@ duk::push(ctx, S{}); // Push object on value stack.
 auto s = duk::get<S>(ctx, -1); // Get object from value stack.
 ```
 
-That's it. Above code creates an `Object` on ES value stack, and moves `S{}` into its internal property. When said ES object gets garbage collected, its finalizer will call destructor of `S`.
+Above code creates an `Object` on ES value stack, and moves `S{}` into its internal property. When said ES object gets garbage collected, its finalizer will call destructor of `S`.
 
 Object like this isn't very useful, other than for passing it to bound C++ functions. Adding methods and properties is explained in [Classes](#classes) section.
 
@@ -194,7 +194,7 @@ Object like this isn't very useful, other than for passing it to bound C++ funct
 
 Binding C++ functions is done with `duk::push_function`, which comes in two variants.
 
-The first one, takes a callable object as a non-type template parameter. This variant is faster, but is also quite limited in what function types it can accept. It is best suited for binding raw function and method pointers.
+The first one, takes a callable object as a non-type template parameter. This variant is faster, but is also quite limited in what callable types it can accept. It is best suited for binding raw function and method pointers.
 
 ```cpp
 static constexpr auto add = [](int a, int b) { return a + b; };
@@ -347,7 +347,7 @@ duk::def_prop_enum(ctx, -1, "Type",
   "C", Type::C
 );
 
-// In ES context this results with:
+// In ES context this results in:
 //
 // {
 //   Type: {
@@ -434,6 +434,44 @@ v.y = 2;
 
 Example code for registering a similar class can be found in `test/vector.cpp`.
 
+#### Free functions as methods
+
+There are situations where it might be desirable to bind free functions as class members. Let's consider an operator defined as a free function.
+
+```cpp
+Vector operator-(const Vector& lhs, float rhs);
+```
+
+It's reasonable that user might want to call it in ES code in the following manner.
+
+```javascript
+var vec1 = new Vector(1, 1);
+var vec2 = vec1.sub(1);
+```
+
+One way to bind such operator is by explicitly forcing desired member function signature:
+
+```cpp
+duk::put_prop_function<
+  duk::function_descriptor<
+    static_cast<Vector(*)(const Vector&, float)>(&operator-),  // pointer to operator function
+    Vector(Vector::*)(float)                                   // desired member function signature
+  >,
+>(ctx_, -1, "sub");
+```
+
+With additional information about desired method signature, dukcpp will consider function's first parameter as `this` pointer to `Vector` object.
+
+In many cases, desired method signature can be deduced automatically. For those situations, dukcpp provides two helper functions: `duk::push_method` and `duk::put_prop_method`. They come in constexpr and non-constexpr variants, and can be used in the following way.
+
+```cpp
+duk::put_prop_method<
+  static_cast<Vector(*)(const Vector&, float)>(&operator-)
+>(ctx, -1, "sub");
+```
+
+In above example, dukcpp knows it is dealing with a method, so it will automatically assume that the first parameter of a free function should be treated as `this` pointer. Using actual method pointers is also allowed.
+
 
 ### Static prototypes
 
@@ -444,7 +482,7 @@ Prototype can be specified explicitly as part of `duk::push` call.
 ```cpp
 struct S {};
 
-// Duktape heap pointer to prototype object for type S.
+// Duktape heap pointer to prototype ES Object for type S.
 void* prototypeHeapPtr = ...;
 
 duk::push(ctx, S{}, prototypeHeapPtr);
@@ -528,7 +566,7 @@ dukcpp allows iteration over ES containers in C++ code. It supports ES arrays an
 
 In most cases, there is no reason to use `duk::symbol_input_range` since `duk::input_iterator` offers more functionality with minimum overhead.
 
-Using dukcpp ranges and iterators directly in user interfaces could be definitely considered intrusive. Their primary use is creating adapter functions to user code.
+Using dukcpp ranges and iterators directly in user interfaces could be definitely considered intrusive. Their primary use is creating adapter functions to user interfaces.
 
 Currently, iteration over C++ containers in ES code is not supported.
 

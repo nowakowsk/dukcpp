@@ -37,10 +37,21 @@ void Vector::add(const Vector& v)
 }
 
 
-[[nodiscard]]
 Vector operator+(const Vector& lhs, const Vector& rhs)
 {
   return { lhs.x + rhs.x, lhs.y + rhs.y };
+}
+
+
+Vector Vector::operator-(const Vector& other)
+{
+  return { x - other.x, y - other.y };
+}
+
+
+Vector operator-(const Vector& lhs, float rhs)
+{
+  return { lhs.x - rhs, lhs.y - rhs };
 }
 
 
@@ -67,7 +78,7 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
     duk::ctor<Vector, float, float>
   >(ctx);
 
-  duk_push_object(ctx);
+  duk_push_object(ctx); // prototype
 
   auto prototypeHandle = duk_get_heapptr(ctx, -1);
 
@@ -75,6 +86,11 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
     static_cast<void(Vector::*)(float)>(&Vector::add),
     static_cast<void(Vector::*)(const Vector&)>(&Vector::add)
   >(ctx, -1, "add");
+
+  duk::put_prop_method<
+    &Vector::operator-,
+    static_cast<Vector(*)(const Vector&, float)>(&operator-)
+  >(ctx, -1, "sub");
 
   duk::def_prop<&Vector::x>(ctx, -1, "x");
   duk::def_prop<&Vector::y>(ctx, -1, "y");
@@ -87,8 +103,9 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
 
   duk_put_prop_string(ctx, idx - 1, "Vector");
 
-  static constexpr auto add = [](const Vector& lhs, const Vector& rhs) { return lhs + rhs; };
-  duk::put_prop_function<add>(ctx, idx, "addVector");
+  duk::put_prop_function<
+    static_cast<Vector(*)(const Vector&, const Vector&)>(&operator+)
+  >(ctx, idx, "addVector");
 
   duk::class_traits<Vector>::prototype = prototypeHandle;
 

@@ -19,6 +19,9 @@ struct Vector
 
   friend Vector operator+(const Vector& lhs, const Vector& rhs);
 
+  Vector operator-(const Vector& rhs);
+  friend Vector operator-(const Vector& lhs, float rhs);
+
   float x = 0;
   float y = 0;
 };

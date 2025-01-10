@@ -31,7 +31,7 @@ void* registerCharacter(duk_context* ctx, duk_idx_t idx)
     "FRIEND", Character::Type::FRIEND
   );
 
-  duk_push_object(ctx);
+  duk_push_object(ctx); // prototype
 
   auto prototypeHandle = duk_get_heapptr(ctx, -1);
 

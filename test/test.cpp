@@ -670,7 +670,7 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
     v3 = makeVector();
     v3.length();
     v1.add(v3);
-    v1 instanceof Vector && v2 instanceof Vector && v3 instanceof Vector
+    v1 instanceof Vector && v2 instanceof Vector && v3 instanceof Vector;
   )__");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
@@ -686,6 +686,81 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
     v4.x;
   )__");
   REQUIRE(equals(duk::get<double>(ctx_, -1), 100.0, 1e-5));
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    v4 = new Vector(4, 5);
+    var v5 = v4.sub(1);
+    v5.length();
+  )__");
+  REQUIRE(equals(duk::get<double>(ctx_, -1), 5.0, 1e-5));
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    v4 = new Vector(4, 6);
+    v5 = v4.sub(new Vector(1, 2));
+    v5.length();
+  )__");
+  REQUIRE(equals(duk::get<double>(ctx_, -1), 5.0, 1e-5));
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Free function as method")
+{
+  struct S
+  {
+    int m = 10;
+  };
+
+  static constexpr auto m1 = [](S& self, int i) -> void { self.m /= i; };
+  static constexpr auto m2 = [](const S& self, int i, int j) -> int { return self.m * i / j; };
+
+  auto m3 = [i = 3](const S& self) -> int { return self.m * i; };
+
+  duk_push_global_object(ctx_);
+
+  duk::push_function<duk::ctor<S>>(ctx_);
+  duk_push_object(ctx_); // prototype
+
+  SECTION("put_prop_function")
+  {
+    duk::put_prop_function<
+      duk::function_descriptor<m1, void(S::*)(int)>,
+      duk::function_descriptor<m2, int(S::*)(int, int)>
+    >(ctx_, -1, "m12");
+  }
+
+  SECTION("put_prop_method")
+  {
+    duk::put_prop_method<m1, m2>(ctx_, -1, "m12");
+  }
+
+  duk::put_prop_method<int(S::*)()>(ctx_, -1, "m3", m3);
+
+  duk_put_prop_string(ctx_, -2, "prototype");
+  duk_put_prop_string(ctx_, -2, "S");
+
+  duk_pop(ctx_); // Pop global object
+
+  duk_eval_string(ctx_, R"__(
+    var s = new S();
+    s.m12(5);
+    s;
+  )__");
+  REQUIRE(duk::get<S>(ctx_, -1).m == 2);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    s.m12(15, 6);
+  )__");
+  REQUIRE(duk::get<int>(ctx_, -1) == 5);
+  duk_pop(ctx_);
+
+  duk_eval_string(ctx_, R"__(
+    s.m3();
+  )__");
+  REQUIRE(duk::get<int>(ctx_, -1) == 6);
   duk_pop(ctx_);
 }
 
