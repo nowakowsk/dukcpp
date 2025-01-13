@@ -14,11 +14,23 @@ struct Character
     FRIEND
   };
 
+  const bool& active() const
+  {
+    return active_;
+  }
+
+  void active(const bool& value)
+  {
+    active_ = value;
+  }
+
   int id = 0;
   std::string name;
-  bool active = false;
   Type type = Type::NEUTRAL;
   Vector position;
+
+private:
+  bool active_ = false;
 };
 
 

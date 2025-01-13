@@ -397,18 +397,6 @@ duk_push_object(ctx);
 The prototype now needs to be filled with properties and methods.
 
 
-### Properties
-
-In our example we will use `duk::def_prop` which is used for binding readable and writable members.
-
-```cpp
-duk::def_prop<&Vector::x>(ctx, -1, "x");
-duk::def_prop<&Vector::y>(ctx, -1, "y");
-```
-
-C++ objects used as writable properties need to be assignable.
-
-
 ### Methods
 
 Class methods are bound just as regular functions:
@@ -473,7 +461,43 @@ duk::put_prop_method<
 In above example, dukcpp knows it is dealing with a method, so it will automatically assume that the first parameter of a free function should be treated as `this` pointer. Using actual method pointers is also allowed.
 
 
-### Static prototypes
+### Properties
+
+In our example we will use `duk::def_prop` which is used for binding readable and writable members.
+
+```cpp
+duk::def_prop<&Vector::x>(ctx, -1, "x");
+duk::def_prop<&Vector::y>(ctx, -1, "y");
+```
+
+C++ objects used as writable properties need to be assignable.
+
+
+#### Virtual properties
+
+dukcpp allows binding class methods as virtual ES properties. Let's consider an alternative `Vector` implemantation, which uses accessors instead of public members.
+
+```cpp
+struct Vector
+{
+  float x() const;
+  void x(float value);
+
+  // ...
+};
+```
+
+`duk::def_prop_method` can be used to bind accessors as virtual ES properties.
+
+```cpp
+duk::def_prop_method<
+  static_cast<float(Vector::*)() const>(&Vector::x),  // getter
+  static_cast<void(Vector::*)(float)>(&Vector::x)     // setter
+>(ctx, -1, "x");
+```
+
+
+### Prototypes
 
 As described in [User types](#user-types) section, when a new object is pushed from C++ code to ES context, it is automatically wrapped in an ES `Object`. By default, such object doesn't have prototype defined, which limits what we can do with it. To address that problem, dukcpp allows user to either explicitly specify the prototype, or to define a static ES prototype for a given C++ type.
 
@@ -488,7 +512,10 @@ void* prototypeHeapPtr = ...;
 duk::push(ctx, S{}, prototypeHeapPtr);
 ```
 
-That's pretty straightforward. But what about situations where we can't do that explicitly? For example, when an object is returned from C++ function called in ES context. In this case, we don't have information about our object's prototype.
+
+#### Static prototypes
+
+But what about situations where we can't do that explicitly? For example, when an object is returned from C++ function called in ES context. In this case, we don't have information about our object's prototype.
 
 To solve that, dukcpp introduces static prototypes. They are defined by specializing `duk::class_traits` class template, and defining a static `prototype_heap_ptr` function.
 

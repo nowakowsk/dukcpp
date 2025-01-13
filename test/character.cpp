@@ -37,9 +37,13 @@ void* registerCharacter(duk_context* ctx, duk_idx_t idx)
 
   duk::def_prop<&Character::id>(ctx, -1, "id");
   duk::def_prop<&Character::name>(ctx, -1, "name");
-  duk::def_prop<&Character::active>(ctx, -1, "active");
   duk::def_prop<&Character::type>(ctx, -1, "type");
   duk::def_prop<&Character::position>(ctx, -1, "position");
+
+  duk::def_prop_method<
+    static_cast<const bool&(Character::*)() const>(&Character::active),
+    static_cast<void(Character::*)(const bool&)>(&Character::active)
+  >(ctx, -1, "active");
 
   duk_put_prop_string(ctx, -2, "prototype");
 

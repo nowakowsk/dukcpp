@@ -80,21 +80,6 @@ struct DtorDeleter final
 };
 
 
-// member_type
-
-template<typename T>
-struct member_type;
-
-template<typename C, typename M>
-struct member_type<M C::*>
-{
-  using type = M;
-};
-
-template<typename T>
-using member_type_t = member_type<T>::type;
-
-
 // expand_pack
 
 template<typename Tuple>
