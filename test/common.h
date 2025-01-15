@@ -33,6 +33,19 @@ struct type_adapter<std::shared_ptr<T>>
 };
 
 
+template<typename T>
+struct class_traits_prototype
+{
+  [[nodiscard]]
+  static void* get(duk_context*) noexcept
+  {
+    return heap_ptr;
+  }
+
+  inline static void* heap_ptr = nullptr;
+};
+
+
 } // namespace duk
 
 

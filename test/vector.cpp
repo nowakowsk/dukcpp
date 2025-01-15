@@ -55,22 +55,6 @@ Vector operator-(const Vector& lhs, float rhs)
 }
 
 
-namespace duk
-{
-
-
-void* class_traits<Vector>::prototype_heap_ptr([[maybe_unused]] duk_context* ctx)
-{
-  return prototype;
-}
-
-
-void* class_traits<Vector>::prototype = nullptr;
-
-
-} // namespace duk
-
-
 void* registerVector(duk_context* ctx, duk_idx_t idx)
 {
   duk::push_function<
@@ -107,7 +91,7 @@ void* registerVector(duk_context* ctx, duk_idx_t idx)
     static_cast<Vector(*)(const Vector&, const Vector&)>(&operator+)
   >(ctx, idx, "addVector");
 
-  duk::class_traits<Vector>::prototype = prototypeHandle;
+  duk::class_traits_prototype<Vector>::heap_ptr = prototypeHandle;
 
   return prototypeHandle;
 }

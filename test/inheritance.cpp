@@ -2,40 +2,6 @@
 #include <duk/duk.h>
 
 
-namespace duk
-{
-
-
-// InhBase
-void* class_traits<InhBase>::prototype_heap_ptr([[maybe_unused]] duk_context* ctx)
-{
-  return prototype;
-}
-
-void* class_traits<InhBase>::prototype = nullptr;
-
-
-// InhDer
-void* class_traits<InhDer>::prototype_heap_ptr([[maybe_unused]] duk_context* ctx)
-{
-  return prototype;
-}
-
-void* class_traits<InhDer>::prototype = nullptr;
-
-
-// InhFinal
-void* class_traits<InhFinal>::prototype_heap_ptr([[maybe_unused]] duk_context* ctx)
-{
-  return prototype;
-}
-
-void* class_traits<InhFinal>::prototype = nullptr;
-
-
-} // namespace duk
-
-
 void registerInhBase(duk_context* ctx, duk_idx_t idx)
 {
   duk::push_function<
@@ -52,7 +18,7 @@ void registerInhBase(duk_context* ctx, duk_idx_t idx)
 
   duk_put_prop_string(ctx, idx - 1, "InhBase");
 
-  duk::class_traits<InhBase>::prototype = prototypeHandle;
+  duk::class_traits_prototype<InhBase>::heap_ptr = prototypeHandle;
 }
 
 
@@ -68,14 +34,14 @@ void registerInhDer(duk_context* ctx, duk_idx_t idx)
 
   duk::put_prop_function<&InhDer::methodB>(ctx, -1, "methodB");
 
-  duk_push_heapptr(ctx, duk::class_traits<InhBase>::prototype);
+  duk_push_heapptr(ctx, duk::class_traits_prototype<InhBase>::heap_ptr);
   duk_set_prototype(ctx, -2);
 
   duk_put_prop_string(ctx, -2, "prototype");
 
   duk_put_prop_string(ctx, idx - 1, "InhDer");
 
-  duk::class_traits<InhDer>::prototype = prototypeHandle;
+  duk::class_traits_prototype<InhDer>::heap_ptr = prototypeHandle;
 }
 
 
@@ -91,12 +57,12 @@ void registerInhFinal(duk_context* ctx, duk_idx_t idx)
 
   duk::put_prop_function<&InhFinal::methodC>(ctx, -1, "methodC");
 
-  duk_push_heapptr(ctx, duk::class_traits<InhDer>::prototype);
+  duk_push_heapptr(ctx, duk::class_traits_prototype<InhDer>::heap_ptr);
   duk_set_prototype(ctx, -2);
 
   duk_put_prop_string(ctx, -2, "prototype");
 
   duk_put_prop_string(ctx, idx - 1, "InhFinal");
 
-  duk::class_traits<InhFinal>::prototype = prototypeHandle;
+  duk::class_traits_prototype<InhFinal>::heap_ptr = prototypeHandle;
 }

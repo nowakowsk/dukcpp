@@ -10,7 +10,7 @@ namespace duk
 
 
 template<typename T>
-struct callable_traits<std::function<T>>
+struct callable_traits_type<std::function<T>>
 {
   using type = T;
 };

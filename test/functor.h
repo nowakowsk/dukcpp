@@ -31,11 +31,18 @@ namespace duk
 {
 
 template<>
-struct callable_traits<Functor>
+struct callable_traits_type<Functor>
 {
   using type = Functor;
-  using signature_pack = std::tuple<bool(), int(int)>;
 };
+
+
+template<>
+struct callable_traits_signature_pack<Functor>
+{
+  using type = std::tuple<bool(), int(int)>;
+};
+
 
 } // namespace duk
 

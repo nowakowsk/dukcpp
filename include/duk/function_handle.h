@@ -47,7 +47,7 @@ using safe_function_handle = function_handle<T, safe_handle>;
 
 
 template<typename T, typename ...Ts>
-struct callable_traits<function_handle<T, Ts...>>
+struct callable_traits_type<function_handle<T, Ts...>>
 {
   using type = T;
 };

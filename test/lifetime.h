@@ -92,7 +92,7 @@ namespace duk
 {
 
 template<>
-struct callable_traits<CallableLifetime>
+struct callable_traits_type<CallableLifetime>
 {
   using type = CallableLifetime;
 };

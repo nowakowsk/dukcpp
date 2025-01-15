@@ -288,7 +288,7 @@ TEST_CASE_METHOD(DukCppTest, "Register overloaded function (value arguments)")
 }
 
 
-TEST_CASE_METHOD(DukCppTest, "Register functor (with duk::callable_traits)")
+TEST_CASE_METHOD(DukCppTest, "Register functor (with duk::callable_traits_type)")
 {
   duk_push_global_object(ctx_);
 
@@ -318,7 +318,7 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (with duk::callable_traits)")
   REQUIRE(duk::get<int>(ctx_, -1) == 10);
   duk_pop(ctx_);
 
-  // Functor returned from a function is treated as a Function because it specializes duk::callable_traits.
+  // Functor returned from a function is treated as a Function because it specializes duk::callable_traits_type.
   duk_eval_string(ctx_, "var f = makeFunctor();");
 
   duk_eval_string(ctx_, "f instanceof Function");
@@ -335,7 +335,7 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (with duk::callable_traits)")
 }
 
 
-TEST_CASE_METHOD(DukCppTest, "Register functor (without duk::callable_traits)")
+TEST_CASE_METHOD(DukCppTest, "Register functor (without duk::callable_traits_type)")
 {
   // This class shadows Functor defined globally in functor.h.
   struct Functor
@@ -383,7 +383,7 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (without duk::callable_traits)")
   REQUIRE(duk::get<int>(ctx_, -1) == 10);
   duk_pop(ctx_);
 
-  // Functor returned from a function is treated as an Object because it doesn't specialize duk::callable_traits.
+  // Functor returned from a function is treated as an Object because it doesn't specialize duk::callable_traits_type.
   duk_eval_string(ctx_, "var f = makeFunctor();");
 
   duk_eval_string(ctx_, "f instanceof Object");

@@ -34,22 +34,6 @@ private:
 };
 
 
-namespace duk
-{
-
-
-template<>
-struct class_traits<Character>
-{
-  static void* prototype_heap_ptr(duk_context* ctx);
-
-  static void* prototype;
-};
-
-
-} // namespace duk
-
-
 // Returns prototype object handle
 void* registerCharacter(duk_context* ctx, duk_idx_t idx);
 

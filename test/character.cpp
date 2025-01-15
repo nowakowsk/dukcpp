@@ -2,22 +2,6 @@
 #include <duk/duk.h>
 
 
-namespace duk
-{
-
-
-void* class_traits<Character>::prototype_heap_ptr([[maybe_unused]] duk_context* ctx)
-{
-  return prototype;
-}
-
-
-void* class_traits<Character>::prototype = nullptr;
-
-
-} // namespace duk
-
-
 void* registerCharacter(duk_context* ctx, duk_idx_t idx)
 {
   duk::push_function<
@@ -49,7 +33,7 @@ void* registerCharacter(duk_context* ctx, duk_idx_t idx)
 
   duk_put_prop_string(ctx, idx - 1, "Character");
 
-  duk::class_traits<Character>::prototype = prototypeHandle;
+  duk::class_traits_prototype<Character>::heap_ptr = prototypeHandle;
 
   return prototypeHandle;
 }

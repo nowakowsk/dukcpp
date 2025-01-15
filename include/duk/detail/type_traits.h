@@ -226,7 +226,7 @@ struct type_traits
     if constexpr (has_class_traits_prototype<AdaptedT>)
     {
       if (!prototype_heap_ptr)
-        prototype_heap_ptr = class_traits<AdaptedT>::prototype_heap_ptr(ctx);
+        prototype_heap_ptr = class_traits_prototype<AdaptedT>::get(ctx);
     }
 
     if (prototype_heap_ptr)
@@ -289,16 +289,16 @@ static constexpr auto type_traits_func_info_name = std::string_view(DUKCPP_DETAI
 template<callable T>
 struct type_traits<T>
 {
-  using Func = callable_traits_t<T>;
+  using Func = callable_traits_type_t<T>;
 
   // Called when user doesn't specify signatures explicitly in duk::push call's template parameters.
   // This function will try to deduce them.
   static void push(duk_context* ctx, auto&& func)
   {
-    // Try using signatures defined in duk::callable_traits.
+    // Try using signatures defined in duk::callable_traits_signature_pack.
     if constexpr (has_callable_traits_signature_pack<T>)
     {
-      expand_pack<callable_traits_signature_pack<T>>::run(
+      expand_pack<callable_traits_signature_pack_t<T>>::run(
         [ctx]<typename ...Signature>(auto&& func)
         {
           push<Signature...>(ctx, std::forward<decltype(func)>(func));

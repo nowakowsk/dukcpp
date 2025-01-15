@@ -300,25 +300,44 @@ duk_eval_string(ctx, "makeFunctor() instanceof Function"); // evaluates to false
 
 What if we want returned object to be treated as a `Function`?
 
-dukcpp allows to specify that a given type will always be treated as a `Function` by specializing `duk::callable_traits` class template.
+dukcpp allows to specify that a given type will always be treated as a `Function` by specializing `duk::callable_traits_type` class template.
 
 ```cpp
 namespace duk
 {
 
 template<>
-struct callable_traits<Functor>
+struct callable_traits_type<Functor>
 {
-  using type = Functor; // required
-  using signature_pack = std::tuple<void(int), void(std::string)>;
+  using type = Functor;
 };
 
 } // namespace duk
 ```
 
-`signature_pack` is only required for overloaded callables. When there is no overloading, signature will be deduced automatically. `signature_pack` doesn't need to specify all overloads. User can expose only some of them.
-
 With the specialization in place, above call to `makeFunctor` will produce `Function` instead of `Object`.
+
+
+#### Overloaded functors
+
+For functors with overloaded `operator()` it is necessary to list all desired overloads by specializing `duk::callable_traits_signature_pack` class template.
+
+```cpp
+namespace duk
+{
+
+template<>
+struct callable_traits_signature_pack<Functor>
+{
+  using type = std::tuple<void(int), void(std::string)>;
+};
+
+} // namespace duk
+```
+
+`duk::callable_traits_signature_pack` is only required for overloaded callables. When there is no overloading, signature will be deduced automatically.
+
+`duk::callable_traits_signature_pack` doesn't need to specify all overloads. User can list only some of them.
 
 
 ### Support for `std::function`
@@ -499,9 +518,7 @@ duk::def_prop_method<
 
 ### Prototypes
 
-As described in [User types](#user-types) section, when a new object is pushed from C++ code to ES context, it is automatically wrapped in an ES `Object`. By default, such object doesn't have prototype defined, which limits what we can do with it. To address that problem, dukcpp allows user to either explicitly specify the prototype, or to define a static ES prototype for a given C++ type.
-
-Prototype can be specified explicitly as part of `duk::push` call.
+As described in [User types](#user-types) section, when a new object is pushed from C++ code to ES context, it is automatically wrapped in an ES `Object`. By default, such object doesn't have prototype defined, which limits what we can do with it. To address that problem, dukcpp allows user to explicitly specify the prototype object in `duk::push` call.
 
 ```cpp
 struct S {};
@@ -515,9 +532,9 @@ duk::push(ctx, S{}, prototypeHeapPtr);
 
 #### Static prototypes
 
-But what about situations where we can't do that explicitly? For example, when an object is returned from C++ function called in ES context. In this case, we don't have information about our object's prototype.
+But what about situations where we can't specify the prototype explicitly? For example, when an object is returned from a C++ function called in ES context. In this case, we don't have information about our object's prototype.
 
-To solve that, dukcpp introduces static prototypes. They are defined by specializing `duk::class_traits` class template, and defining a static `prototype_heap_ptr` function.
+To solve that, dukcpp introduces static prototypes. They are defined by specializing `duk::class_traits_prototype` class template, and defining a static `get` function, which returns heap pointer to prototype `Object` for a given C++ type.
 
 ```cpp
 #include <duk/class.h>
@@ -528,16 +545,16 @@ namespace duk
 {
 
 template<>
-struct class_traits<S>
+struct class_traits_prototype<S>
 {
-  static void* prototype_heap_ptr(duk_context* ctx);
+  static void* get(duk_context* ctx);
 };
 
 } // namespace duk
 ```
 
-Whenever dukcpp will need a prototype for type `S`, it will call `duk::class_traits<S>::prototype_heap_ptr`.
-Implementation of this function is left to the user. Example can be found in `test/vector.cpp`.
+Whenever dukcpp will need a prototype for type `S`, it will call `duk::class_traits_prototype<S>::get`.
+Implementation of this function is left to the user. Example can be found in `test/common.h`.
 
 
 ### Inheritance

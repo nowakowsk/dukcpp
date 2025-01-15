@@ -1,6 +1,7 @@
 #ifndef DUKCPP_TEST_VECTOR_H
 #define DUKCPP_TEST_VECTOR_H
 
+#include "common.h"
 #include <duk/class.h>
 
 
@@ -25,22 +26,6 @@ struct Vector
   float x = 0;
   float y = 0;
 };
-
-
-namespace duk
-{
-
-
-template<>
-struct class_traits<Vector>
-{
-  static void* prototype_heap_ptr(duk_context* ctx);
-
-  static void* prototype;
-};
-
-
-} // namespace duk
 
 
 // Returns prototype object handle

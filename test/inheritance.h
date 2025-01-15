@@ -1,6 +1,7 @@
 #ifndef DUKCPP_TEST_INHERITANCE_H
 #define DUKCPP_TEST_INHERITANCE_H
 
+#include "common.h"
 #include <duk/class.h>
 
 
@@ -36,33 +37,16 @@ namespace duk
 
 
 template<>
-struct class_traits<InhBase>
+struct class_traits_base<InhDer>
 {
-  static void* prototype_heap_ptr(duk_context* ctx);
-
-  static void* prototype;
+  using type = InhBase;
 };
 
 
 template<>
-struct class_traits<InhDer>
+struct class_traits_base<InhFinal>
 {
-  using base = InhBase;
-
-  static void* prototype_heap_ptr(duk_context* ctx);
-
-  static void* prototype;
-};
-
-
-template<>
-struct class_traits<InhFinal>
-{
-  using base = InhDer;
-
-  static void* prototype_heap_ptr(duk_context* ctx);
-
-  static void* prototype;
+  using type = InhDer;
 };
 
 

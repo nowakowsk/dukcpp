@@ -9,28 +9,20 @@ namespace duk
 {
 
 
-// class_traits
+// class_traits_prototype
 
 template<typename T>
-struct class_traits;
+struct class_traits_prototype;
 
 
 template<typename T>
 concept has_class_traits_prototype = requires(duk_context* ctx)
 {
-  { class_traits<T>::prototype_heap_ptr(ctx) } -> std::same_as<void*>;
+  { class_traits_prototype<T>::get(ctx) } -> std::same_as<void*>;
 };
 
 
 // class_traits_base
-
-template<typename T>
-concept has_class_traits_base = requires
-{
-  typename class_traits<T>::base;
-  requires std::is_base_of_v<typename class_traits<T>::base, T>;
-};
-
 
 template<typename T>
 struct class_traits_base
@@ -39,11 +31,14 @@ struct class_traits_base
   using type = void;
 };
 
-template<has_class_traits_base T>
-struct class_traits_base<T>
+
+template<typename T>
+concept has_class_traits_base = requires
 {
-  using type = class_traits<T>::base;
+  typename class_traits_base<T>::type;
+  requires std::is_base_of_v<typename class_traits_base<T>::type, T>;
 };
+
 
 template<typename T>
 using class_traits_base_t = typename class_traits_base<T>::type;
