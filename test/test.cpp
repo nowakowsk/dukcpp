@@ -713,6 +713,8 @@ TEST_CASE_METHOD(DukCppTest, "Free function as method")
     int m = 10;
   };
 
+  static_assert(duk::object<S>);
+
   static constexpr auto m1 = [](S& self, int i) -> void { self.m /= i; };
   static constexpr auto m2 = [](const S& self, int i, int j) -> int { return self.m * i / j; };
 

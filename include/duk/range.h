@@ -9,6 +9,10 @@
 #include <variant>
 
 
+// TODO: Consider scenario in which duk_call_prop calls cause an error. It will likely require rethinking the way
+// scoped_pop is used. Same for duk_call in other places.
+
+
 namespace duk
 {
 
@@ -303,7 +307,7 @@ private:
     scoped_pop _(ctx); // push_handle
     push_handle(iteratorHandle_);
 
-    duk_push_string(ctx, "next");
+    duk_push_literal(ctx, "next");
 
     scoped_pop __(ctx); // duk_call_prop
     duk_call_prop(ctx, -2, 0);
@@ -346,7 +350,7 @@ public:
     scoped_pop _(ctx); // push_handle
     push_handle(containerHandle_);
 
-    duk_push_string(ctx, DUK_WELLKNOWN_SYMBOL("Symbol.iterator"));
+    duk_push_literal(ctx, DUK_WELLKNOWN_SYMBOL("Symbol.iterator"));
 
     scoped_pop __(ctx); // duk_call_prop
     duk_call_prop(ctx, -2, 0);

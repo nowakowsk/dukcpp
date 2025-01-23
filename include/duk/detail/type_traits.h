@@ -73,7 +73,7 @@ struct ObjectInfo
       throw error(ctx_, "invalid type requested");
 
     if constexpr (has_type_adapter<T>)
-      return static_cast<T>(*std::unique_ptr<T, DtorDeleter<T>>(reinterpret_cast<T*>(&buffer)));
+      return T(*std::unique_ptr<T, DtorDeleter<T>>(reinterpret_cast<T*>(&buffer)));
     else
       return static_cast<T&>(**reinterpret_cast<T**>(&buffer));
   }
@@ -189,6 +189,8 @@ struct type_traits
 {
   using DecayT = std::decay_t<T>;
 
+  static constexpr bool detail_is_object = true;
+
   static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
   {
     using ObjectInfoImplT = ObjectInfoImpl<DecayT>;
@@ -237,7 +239,7 @@ struct type_traits
   }
 
   [[nodiscard]]
-  static T get(duk_context* ctx, duk_idx_t idx)
+  static decltype(auto) get(duk_context* ctx, duk_idx_t idx)
   {
     // TODO:
     // Accessing property here isn't ideal since, in most cases, it's already been done in check_type.

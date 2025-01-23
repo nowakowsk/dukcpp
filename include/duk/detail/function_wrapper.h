@@ -95,18 +95,20 @@ struct FunctionWrapper<Signature, std::index_sequence<argIdx...>, IsPropertyCall
     if constexpr (IsPropertyCall)
       duk_pop(ctx);
 
-    if constexpr (isMethodCall || IsPropertyCall)
+    static constexpr bool pushThis = isMethodCall || IsPropertyCall;
+
+    if constexpr (pushThis)
     {
       duk_push_this(ctx);
-      duk_insert(ctx, -static_cast<duk_idx_t>(sizeof...(argIdx)));
+      duk_insert(ctx, -duk_get_top(ctx));
     }
 
     bool argsMatch = duk_get_top(ctx) == sizeof...(argIdx) &&
                      (type_traits<std::tuple_element_t<argIdx, ArgsTuple>>::check_type(ctx, argIdx) && ...);
     if (!argsMatch)
     {
-      if constexpr (isMethodCall || IsPropertyCall)
-        duk_remove(ctx, -static_cast<duk_idx_t>(sizeof...(argIdx)));
+      if constexpr (pushThis)
+        duk_remove(ctx, -duk_get_top(ctx));
 
       return DUK_RET_TYPE_ERROR;
     }

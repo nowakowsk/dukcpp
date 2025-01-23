@@ -15,6 +15,15 @@ namespace duk
 {
 
 
+namespace detail
+{
+
+template<typename T>
+struct type_traits;
+
+} // namespace detail
+
+
 template<typename T>
 concept integer =
   std::is_integral_v<std::decay_t<T>> &&
@@ -38,6 +47,13 @@ template<typename T>
 concept boolean =
   std::is_same_v<std::decay_t<T>, bool> &&
   !std::is_member_pointer_v<std::decay_t<T>>;
+
+
+template<typename T>
+concept object = requires
+{
+  requires detail::type_traits<T>::detail_is_object;
+};
 
 
 namespace detail
