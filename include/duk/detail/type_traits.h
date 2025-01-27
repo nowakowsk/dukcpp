@@ -404,8 +404,8 @@ inline static bool finalize_callable(duk_context* ctx, duk_idx_t idx)
   duk_get_finalizer(ctx, idx - 1);
   duk_dup(ctx, idx - 2);
 
-  scoped_pop __(ctx); // duk_call
-  duk_call(ctx, 1);
+  scoped_pop __(ctx); // duk_pcall
+  duk_pcall(ctx, 1);
 
   return del_prop_string(ctx, idx - 2, type_traits_func_info_name);
 }

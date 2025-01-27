@@ -77,7 +77,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (value arguments)")
   duk::put_prop_function<add>(ctx_, -1, "add");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "add(1, 2)");
+  duk_peval_string(ctx_, "add(1, 2)");
   REQUIRE(duk::get<int>(ctx_, -1) == 3);
 }
 
@@ -93,7 +93,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (reference arguments)")
   duk::put_prop_function<add>(ctx_, -1, "add");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "add(1, 2)");
+  duk_peval_string(ctx_, "add(1, 2)");
   REQUIRE(duk::get<int>(ctx_, -1) == 3);
 }
 
@@ -106,15 +106,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: int"
   duk::put_prop_function<identity<const int&, const int&>>(ctx_, -1, "crefint_crefint");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "int_int(-5)");
+  duk_peval_string(ctx_, "int_int(-5)");
   REQUIRE(duk::get<int>(ctx_, -1) == -5);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "int_crefint(-5)");
+  duk_peval_string(ctx_, "int_crefint(-5)");
   REQUIRE(duk::get<int>(ctx_, -1) == -5);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "crefint_crefint(-5)");
+  duk_peval_string(ctx_, "crefint_crefint(-5)");
   REQUIRE(duk::get<const int&>(ctx_, -1) == -5);
   duk_pop(ctx_);
 }
@@ -128,15 +128,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: unsi
   duk::put_prop_function<identity<const unsigned int&, const unsigned int&>>(ctx_, -1, "crefuint_crefuint");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "uint_uint(5)");
+  duk_peval_string(ctx_, "uint_uint(5)");
   REQUIRE(duk::get<unsigned int>(ctx_, -1) == 5);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "uint_crefuint(5)");
+  duk_peval_string(ctx_, "uint_crefuint(5)");
   REQUIRE(duk::get<unsigned int>(ctx_, -1) == 5);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "crefuint_crefuint(5)");
+  duk_peval_string(ctx_, "crefuint_crefuint(5)");
   REQUIRE(duk::get<const unsigned int&>(ctx_, -1) == 5);
   duk_pop(ctx_);
 }
@@ -150,15 +150,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: floa
   duk::put_prop_function<identity<const float&, const float&>>(ctx_, -1, "creffloat_creffloat");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "float_float(1)");
+  duk_peval_string(ctx_, "float_float(1)");
   REQUIRE(equals(duk::get<float>(ctx_, -1), 1.0f, 1e-5f));
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "float_creffloat(1)");
+  duk_peval_string(ctx_, "float_creffloat(1)");
   REQUIRE(equals(duk::get<float>(ctx_, -1), 1.0f, 1e-5f));
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "creffloat_creffloat(1)");
+  duk_peval_string(ctx_, "creffloat_creffloat(1)");
   REQUIRE(equals(duk::get<const float&>(ctx_, -1), 1.0f, 1e-5f));
   duk_pop(ctx_);
 }
@@ -172,15 +172,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: bool
   duk::put_prop_function<identity<const bool&, const bool&>>(ctx_, -1, "crefbool_crefbool");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "bool_bool(true)");
+  duk_peval_string(ctx_, "bool_bool(true)");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "bool_crefbool(true)");
+  duk_peval_string(ctx_, "bool_crefbool(true)");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "crefbool_crefbool(true)");
+  duk_peval_string(ctx_, "crefbool_crefbool(true)");
   REQUIRE(duk::get<const bool&>(ctx_, -1) == true);
   duk_pop(ctx_);
 }
@@ -199,15 +199,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: enum
   duk::put_prop_function<identity<const Enum&, const Enum&>>(ctx_, -1, "crefenum_crefenum");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "enum_enum(0)");
+  duk_peval_string(ctx_, "enum_enum(0)");
   REQUIRE(duk::get<Enum>(ctx_, -1) == Enum::A);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "enum_crefenum(1)");
+  duk_peval_string(ctx_, "enum_crefenum(1)");
   REQUIRE(duk::get<Enum>(ctx_, -1) == Enum::B);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "crefenum_crefenum(2)");
+  duk_peval_string(ctx_, "crefenum_crefenum(2)");
   REQUIRE(duk::get<const Enum&>(ctx_, -1) == Enum::C);
   duk_pop(ctx_);
 }
@@ -221,15 +221,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std:
   duk::put_prop_function<identity<const std::string&, const std::string&>>(ctx_, -1, "crefstring_crefstring");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "string_string('test')");
+  duk_peval_string(ctx_, "string_string('test')");
   REQUIRE(duk::get<std::string>(ctx_, -1) == "test");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "string_crefstring('test')");
+  duk_peval_string(ctx_, "string_crefstring('test')");
   REQUIRE(duk::get<std::string>(ctx_, -1) == "test");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "crefstring_crefstring('test')");
+  duk_peval_string(ctx_, "crefstring_crefstring('test')");
   REQUIRE(duk::get<const std::string&>(ctx_, -1) == "test");
   duk_pop(ctx_);
 }
@@ -243,15 +243,15 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: std:
   duk::put_prop_function<identity<const std::string_view&, const std::string_view&>>(ctx_, -1, "crefstring_crefstring");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "(string_string('test'))");
+  duk_peval_string(ctx_, "(string_string('test'))");
   REQUIRE(duk::get<std::string_view>(ctx_, -1) == "test");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "(string_crefstring('test'))");
+  duk_peval_string(ctx_, "(string_crefstring('test'))");
   REQUIRE(duk::get<std::string_view>(ctx_, -1) == "test");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "(crefstring_crefstring('test'))");
+  duk_peval_string(ctx_, "(crefstring_crefstring('test'))");
   REQUIRE(duk::get<std::string_view>(ctx_, -1) == "test");
   duk_pop(ctx_);
 }
@@ -263,7 +263,7 @@ TEST_CASE_METHOD(DukCppTest, "Pass and return by value and const reference: cons
   duk::put_prop_function<identity<const char*, const char*>>(ctx_, -1, "constchar_constchar");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "constchar_constchar('test')");
+  duk_peval_string(ctx_, "constchar_constchar('test')");
   REQUIRE(std::strcmp(duk::get<const char*>(ctx_, -1), "test") == 0);
   duk_pop(ctx_);
 }
@@ -278,11 +278,11 @@ TEST_CASE_METHOD(DukCppTest, "Register overloaded function (value arguments)")
   >(ctx_, -1, "add");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "add(1, 2)");
+  duk_peval_string(ctx_, "add(1, 2)");
   REQUIRE(duk::get<int>(ctx_, -1) == 3);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "add('a', 'b')");
+  duk_peval_string(ctx_, "add('a', 'b')");
   REQUIRE(duk::get<std::string>(ctx_, -1) == "ab");
   duk_pop(ctx_);
 }
@@ -310,26 +310,26 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (with duk::callable_traits_type)"
 
   duk_pop(ctx_); // duk_push_global_object
 
-  duk_eval_string(ctx_, "func()");
+  duk_peval_string(ctx_, "func()");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "func(10)");
+  duk_peval_string(ctx_, "func(10)");
   REQUIRE(duk::get<int>(ctx_, -1) == 10);
   duk_pop(ctx_);
 
   // Functor returned from a function is treated as a Function because it specializes duk::callable_traits_type.
-  duk_eval_string(ctx_, "var f = makeFunctor();");
+  duk_peval_string(ctx_, "var f = makeFunctor();");
 
-  duk_eval_string(ctx_, "f instanceof Function");
+  duk_peval_string(ctx_, "f instanceof Function");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "f()");
+  duk_peval_string(ctx_, "f()");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "f(20)");
+  duk_peval_string(ctx_, "f(20)");
   REQUIRE(duk::get<int>(ctx_, -1) == 20);
   duk_pop(ctx_);
 }
@@ -375,22 +375,22 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (without duk::callable_traits_typ
 
   duk_pop(ctx_); // duk_push_global_object
 
-  duk_eval_string(ctx_, "func()");
+  duk_peval_string(ctx_, "func()");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "func(10)");
+  duk_peval_string(ctx_, "func(10)");
   REQUIRE(duk::get<int>(ctx_, -1) == 10);
   duk_pop(ctx_);
 
   // Functor returned from a function is treated as an Object because it doesn't specialize duk::callable_traits_type.
-  duk_eval_string(ctx_, "var f = makeFunctor();");
+  duk_peval_string(ctx_, "var f = makeFunctor();");
 
-  duk_eval_string(ctx_, "f instanceof Object");
+  duk_peval_string(ctx_, "f instanceof Object");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "f instanceof Function");
+  duk_peval_string(ctx_, "f instanceof Function");
   REQUIRE(duk::get<bool>(ctx_, -1) == false);
   duk_pop(ctx_);
 }
@@ -432,14 +432,14 @@ TEST_CASE_METHOD(DukCppTest, "Register lambda with capture list")
   duk::put_prop_function(ctx_, -1, "multiply", multiply);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "multiply(10)");
+  duk_peval_string(ctx_, "multiply(10)");
   REQUIRE(duk::get<int>(ctx_, -1) == 50);
 }
 
 
 TEST_CASE_METHOD(DukCppTest, "Call ES function in C++ (non-null return value)")
 {
-  duk_eval_string(ctx_, "function f(a, b) { return a * b; }; (f);");
+  duk_peval_string(ctx_, "function f(a, b) { return a * b; }; (f);");
   auto f = duk::get<std::function<int(int, int)>>(ctx_, -1);
   auto result = f(2, 3);
   REQUIRE(result == 6);
@@ -448,7 +448,7 @@ TEST_CASE_METHOD(DukCppTest, "Call ES function in C++ (non-null return value)")
 
 TEST_CASE_METHOD(DukCppTest, "Call ES function in C++ (null return value)")
 {
-  duk_eval_string(ctx_, "function f() {}; (f);");
+  duk_peval_string(ctx_, "function f() {}; (f);");
   auto f = duk::get<std::function<void()>>(ctx_, -1);
   f();
 }
@@ -465,7 +465,7 @@ TEST_CASE_METHOD(DukCppTest, "Register function (function argument)")
   duk::put_prop_function(ctx_, -1, "multiply", multiply);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     function f() { return 3; }
     multiply(10, f);
   )__");
@@ -594,7 +594,7 @@ TEST_CASE_METHOD(DukCppTest, "Allocator")
 
 TEST_CASE_METHOD(DukCppTest, "Safe handle (function)")
 {
-  duk_eval_string(ctx_, "function f() { return 123; }; (f);");
+  duk_peval_string(ctx_, "function f() { return 123; }; (f);");
 
   auto funcHandle = duk::safe_handle(duk::handle(ctx_, -1));
 
@@ -602,7 +602,7 @@ TEST_CASE_METHOD(DukCppTest, "Safe handle (function)")
 
   // Make sure function is available for reclamation by gc.
   // https://duktape.org/guide#limitations.12
-  duk_eval_string(ctx_, "f.prototype = null; f = null;");
+  duk_peval_string(ctx_, "f.prototype = null; f = null;");
 
   duk_gc(ctx_, 0);
 
@@ -651,7 +651,7 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
 
   duk_pop(ctx_); // Pop global object
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     var v1 = new Vector(1, 2);
     v1.add(2);
     v1.length();
@@ -659,14 +659,14 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
   REQUIRE(equals(duk::get<double>(ctx_, -1), 5.0, 1e-5));
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     v1.add(new Vector(2, 8));
     v1.length();
   )__");
   REQUIRE(equals(duk::get<double>(ctx_, -1), 13.0, 1e-5));
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     v3 = makeVector();
     v3.length();
     v1.add(v3);
@@ -675,20 +675,20 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     addVector(v4, new Vector(2, 3)).length()
   )__");
   REQUIRE(equals(duk::get<float>(ctx_, -1), 5.0f, 1e-5f));
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     v4.x = 100;
     v4.x;
   )__");
   REQUIRE(equals(duk::get<double>(ctx_, -1), 100.0, 1e-5));
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     v4 = new Vector(4, 5);
     var v5 = v4.sub(1);
     v5.length();
@@ -696,7 +696,7 @@ TEST_CASE_METHOD(DukCppTest, "Class binding")
   REQUIRE(equals(duk::get<double>(ctx_, -1), 5.0, 1e-5));
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     v4 = new Vector(4, 6);
     v5 = v4.sub(new Vector(1, 2));
     v5.length();
@@ -745,7 +745,7 @@ TEST_CASE_METHOD(DukCppTest, "Free function as method")
 
   duk_pop(ctx_); // Pop global object
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     var s = new S();
     s.m12(5);
     s;
@@ -753,13 +753,13 @@ TEST_CASE_METHOD(DukCppTest, "Free function as method")
   REQUIRE(duk::get<S>(ctx_, -1).m == 2);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     s.m12(15, 6);
   )__");
   REQUIRE(duk::get<int>(ctx_, -1) == 5);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     s.m3();
   )__");
   REQUIRE(duk::get<int>(ctx_, -1) == 6);
@@ -771,7 +771,7 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
 {
   auto assertEq = [this](const char* code, const char* result)
   {
-    duk_eval_string(ctx_, code);
+    duk_peval_string(ctx_, code);
     REQUIRE(duk::get<std::string>(ctx_, -1) == result);
     duk_pop(ctx_);
   };
@@ -807,7 +807,7 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
 
   SECTION("Values")
   {
-    duk_eval_string(ctx_, R"__(
+    duk_peval_string(ctx_, R"__(
       var base = new InhBase();
       var der = new InhDer();
       var final = new InhFinal();
@@ -816,7 +816,7 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
 
   SECTION("Pointers")
   {
-    duk_eval_string(ctx_, R"__(
+    duk_peval_string(ctx_, R"__(
       var base = makeInhBase();
       var der = makeInhDer();
       var final = makeInhFinal();
@@ -850,7 +850,7 @@ TEST_CASE_METHOD(DukCppTest, "Inheritance")
   assertEq("runMethodB(final);", "FinalB");
   assertEq("runMethodC(final);", "FinalC");
 
-  REQUIRE_THROWS(duk_eval_string(ctx_, "base.methodC();"));
+  REQUIRE(duk_peval_string(ctx_, "base.methodC();") != 0); // Call failed with an error.
 }
 
 
@@ -891,11 +891,11 @@ TEST_CASE_METHOD(DukCppTest, "Enum")
 
   duk_pop(ctx_); // Pop global object
 
-  duk_eval_string(ctx_, "Enum.E1");
+  duk_peval_string(ctx_, "Enum.E1");
   REQUIRE(duk::get<Enum>(ctx_, -1) == Enum::E1);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, "Enum.E2");
+  duk_peval_string(ctx_, "Enum.E2");
   REQUIRE(duk::get<Enum>(ctx_, -1) == Enum::E2);
   duk_pop(ctx_);
 }
@@ -910,7 +910,7 @@ TEST_CASE_METHOD(DukCppTest, "Properties")
 
   duk_pop(ctx_); // Pop global object
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     var c = new Character();
     c.id = 100;
     c.id;
@@ -918,28 +918,28 @@ TEST_CASE_METHOD(DukCppTest, "Properties")
   REQUIRE(duk::get<int>(ctx_, -1) == 100);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     c.name = "name";
     c.name;
   )__");
   REQUIRE(duk::get<std::string>(ctx_, -1) == "name");
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     c.active = true;
     c.active;
   )__");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     c.type = Character.Type.ENEMY;
     c.type;
   )__");
   REQUIRE(duk::get<Character::Type>(ctx_, -1) == Character::Type::ENEMY);
   duk_pop(ctx_);
 
-  duk_eval_string(ctx_, R"__(
+  duk_peval_string(ctx_, R"__(
     c.position = new Vector(10, 20);
     c.position;
   )__");
@@ -988,7 +988,7 @@ TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Ranges (std::input_iterator)", ""
     )__";
   }
 
-  duk_eval_string(ctx, containerCode);
+  duk_peval_string(ctx, containerCode);
   auto range = duk::get<TestType>(ctx, -1);
 
   auto iter = range.begin();
@@ -1008,7 +1008,7 @@ TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Ranges (std::input_iterator)", ""
 
 TEST_CASE_METHOD(DukCppTest, "Ranges (std::random_access_iterator)")
 {
-  duk_eval_string(ctx_, "([0, 1, 2, 3, 4]);");
+  duk_peval_string(ctx_, "([0, 1, 2, 3, 4]);");
   auto range = duk::get<duk::safe_array_input_range<int>>(ctx_, -1);
 
   auto iter = range.begin();
@@ -1074,13 +1074,13 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
 
   SECTION("Array")
   {
-    duk_eval_string(ctx_, R"__(
+    duk_peval_string(ctx_, R"__(
       sumRange([1, 2, 3]);
     )__");
     REQUIRE(duk::get<int>(ctx_, -1) == 6);
     duk_pop(ctx_);
 
-    duk_eval_string(ctx_, R"__(
+    duk_peval_string(ctx_, R"__(
       sumRanges([1, 2, 3], [10, 20, 30]);
     )__");
     REQUIRE(duk::get<std::string>(ctx_, -1) == "11 22 33 ");
@@ -1089,7 +1089,7 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
 
   SECTION("Symbol.iterator")
   {
-    duk_eval_string(ctx_, R"__(
+    duk_peval_string(ctx_, R"__(
       var iterableObject = {
         [Symbol.iterator]: function()
         {
@@ -1115,11 +1115,30 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
     REQUIRE(duk::get<int>(ctx_, -1) == 10);
     duk_pop(ctx_);
 
-    duk_eval_string(ctx_, R"__(
+    duk_peval_string(ctx_, R"__(
       sumRanges(iterableObject, iterableObject);
     )__");
     REQUIRE(duk::get<std::string>(ctx_, -1) == "2 4 6 8 ");
     duk_pop(ctx_);
+  }
+
+  SECTION("Symbol.iterator (next() throws)")
+  {
+    duk_peval_string_noresult(ctx_, R"__(
+      var iterableObject = {
+        [Symbol.iterator]: function()
+        {
+          return {
+            next: function()
+            {
+              throw 0;
+            }
+          };
+        }
+      };
+
+      sumRange(iterableObject);
+    )__");
   }
 }
 
@@ -1145,7 +1164,7 @@ TEST_CASE_METHOD(DukCppTest, "Generic object binding")
   duk::push_function<f>(ctx_);
   duk::push(ctx_, A{});
   duk::push(ctx_, B{});
-  duk_call(ctx_, 2);
+  duk_pcall(ctx_, 2);
   REQUIRE(duk::get<std::string>(ctx_, -1) == "helloworld");
   duk_pop(ctx_);
 
@@ -1153,6 +1172,6 @@ TEST_CASE_METHOD(DukCppTest, "Generic object binding")
   duk::push_function<f>(ctx_);
   duk::push(ctx_, A{});
   duk::push(ctx_, A{});
-  REQUIRE_THROWS(duk_call(ctx_, 2));
+  REQUIRE(duk_pcall(ctx_, 2) != 0); // Call failed with an error.
   duk_pop(ctx_);
 }

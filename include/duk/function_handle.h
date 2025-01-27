@@ -30,8 +30,8 @@ public:
     push_handle(handle_);
     (push(handle_.ctx(), std::forward<decltype(args)>(args)), ...);
 
-    scoped_pop _(handle_.ctx()); // duk_call
-    duk_call(handle_.ctx(), sizeof...(args));
+    scoped_pop _(handle_.ctx()); // duk_pcall
+    duk_pcall(handle_.ctx(), sizeof...(args));
 
     return safe_get<Result>(handle_.ctx(), -1);
   }
