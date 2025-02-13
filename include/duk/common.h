@@ -52,7 +52,7 @@ concept boolean =
 template<typename T>
 concept object = requires
 {
-  requires detail::type_traits<T>::detail_is_object;
+  requires detail::type_traits<T>::is_object;
 };
 
 

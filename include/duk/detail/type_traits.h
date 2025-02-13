@@ -189,7 +189,7 @@ struct type_traits
 {
   using DecayT = std::decay_t<T>;
 
-  static constexpr bool detail_is_object = true;
+  static constexpr bool is_object = true;
 
   static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
   {
@@ -217,8 +217,11 @@ struct type_traits
     else
       duk_push_object(ctx);
 
+    duk::push(ctx, type_traits_object_info_name);
     duk_push_pointer(ctx, objInfo);
-    put_prop_string(ctx, -2, type_traits_object_info_name);
+    duk_def_prop(ctx, -3,
+      DUK_DEFPROP_HAVE_VALUE | DUK_DEFPROP_CLEAR_WRITABLE | DUK_DEFPROP_CLEAR_ENUMERABLE | DUK_DEFPROP_SET_CONFIGURABLE
+    );
 
     duk_push_c_function(ctx, finalizer, 2);
     duk_set_finalizer(ctx, -2);
