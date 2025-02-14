@@ -283,7 +283,7 @@ User should also take into account inheritance relations of function parameters.
 
 As mentioned in [User types](#user-types) section, by default, `duk::push` puts user objects inside ES `Object` instances. This, however, might not be a desired outcome when dealing with functor objects. It is reasonable for a user to expect that a functor would be represented as ES-callable `Function` instance. There are two basic ways to specify desired ES type for callable objects.
 
-The first one has already been mentioned. Instead of using `duk::push` (which defaults to creating `Object`), user can use `duk::push_function`. It explicitly tells dukcpp to use `Function`. This works fine, but there are situations where we can't always be this explicit. For example, let's imagine our functor is returned from a function.
+The first one has already been mentioned. Instead of using `duk::push` (which defaults to creating `Object`), user can use `duk::push_function`. It explicitly tells dukcpp to use `Function`. This works fine, but there are situations where we can't always be this explicit. For example, let's imagine that our functor is returned from a function.
 
 ```cpp
 Functor makeFunctor()
@@ -424,23 +424,6 @@ Class methods are bound just as regular functions:
 duk::put_prop_function<&Vector::length>(ctx, -1, "length");
 ```
 
-With prototype object ready, we complete the binding process by placing it inside the constructor function.
-
-```cpp
-duk_put_prop_string(ctx, -2, "prototype");
-```
-
-That's it. After giving our constructor a name, we can use it as if it was a regular ES "class".
-
-```javascript
-var v = new Vector(1, 2);
-var length = v.length();
-v.x = 1;
-v.y = 2;
-```
-
-Example code for registering a similar class can be found in `test/vector.cpp`.
-
 #### Free functions as methods
 
 There are situations where it might be desirable to bind free functions as class members. Let's consider an operator defined as a free function.
@@ -514,6 +497,26 @@ duk::def_prop_method<
   static_cast<void(Vector::*)(float)>(&Vector::x)     // setter
 >(ctx, -1, "x");
 ```
+
+
+### Wrapping it up
+
+With prototype object ready, we complete the class binding process by placing it inside the constructor function.
+
+```cpp
+duk_put_prop_string(ctx, -2, "prototype");
+```
+
+That's it. After giving our constructor function a name, we can use it as if it was a regular ES "class".
+
+```javascript
+var v = new Vector(1, 2);
+var length = v.length();
+v.x = 1;
+v.y = 2;
+```
+
+Example code for registering a similar class can be found in `test/vector.cpp`.
 
 
 ### Prototypes
@@ -678,7 +681,7 @@ When calling a function handle, it is up to the user to make sure that function 
 
 The primary motivation for type adapters in dukcpp are smart pointers.
 
-In most cases, users will want a guarantee that an ES object referenced in C++ code won't get silently garbage collected, leaving a dangling reference. The same is true in the opposite direction - we don't want C++ code to silently free an object which might be directly or indirectly accessible from ES code. The easiest way to guarantee it is to use smart pointers.
+In most cases, users will want a guarantee that an ES object referenced in C++ code won't get silently garbage collected, leaving a dangling reference. The same is true in the opposite direction - we don't want C++ code to silently free an object which might be accessible from ES code. The easiest way to guarantee it is to use smart pointers.
 
 ```cpp
 struct S {};
@@ -796,7 +799,7 @@ In contrast to `std::shared_ptr`, [dukcpp handles](#handles) are not thread-safe
 
 ## `DUKCPP_USE_CUSTOM_RTTI`
 
-By default, dukcpp uses `typeid` operator for runtime type validation. If for any reason this approach isn't feasible, it may be changed by defining `DUKCPP_USE_CUSTOM_RTTI` macro. In such case, user will need to provide an alternative RTTI mechanism.
+By default, dukcpp uses `typeid` operator for runtime type validation. If, for any reason, this approach isn't feasible, it may be changed by defining `DUKCPP_USE_CUSTOM_RTTI` macro. In such case, user will need to provide an alternative RTTI mechanism.
 
 It is done by defining `duk::type_id` function, returning a unique id number for any user type exposed to Duktape with dukcpp.
 
