@@ -385,9 +385,9 @@ struct type_traits<T>
   [[nodiscard]]
   static auto get(duk_context* ctx, duk_idx_t idx)
   {
-    using Signature = boost::callable_traits::function_type_t<Func>;
+    using Result = boost::callable_traits::return_type_t<Func>;
 
-    return safe_function_handle<Signature>(handle(ctx, idx));
+    return safe_function_handle<Result>(handle(ctx, idx));
   }
 
   [[nodiscard]]

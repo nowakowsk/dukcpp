@@ -649,13 +649,15 @@ Function handles are wrappers around handles pointing to ES functions. They can 
 - `duk::function_handle`
 - `duk::safe_function_handle`
 
+Function handles have a single template parameter which specifies function's expected return type. Multiple return types are currently not supported.
+
 Custom function handles can be defined by specializing `duk::function_handle` class template with a custom handle type.
 
 ```cpp
 duk_eval_string(ctx, "function f(a, b) { return a + b; }; (f);");
 auto handle = duk::handle(ctx, -1);
 auto safeHandle = duk::safe_handle(handle);
-auto f = duk::safe_function_handle<int(int, int)>(safeHandle);
+auto f = duk::safe_function_handle<int>(safeHandle);
 auto result = f(1, 2); // result equals 3
 ```
 

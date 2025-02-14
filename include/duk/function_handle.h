@@ -14,7 +14,7 @@ namespace duk
 
 
 // Non-owning handle to Duktape function.
-template<typename T, typename Handle = handle>
+template<typename Result, typename Handle = handle>
 class function_handle
 {
 public:
@@ -25,8 +25,6 @@ public:
 
   decltype(auto) operator()(auto&& ...args) const
   {
-    using Result = boost::callable_traits::return_type_t<T>;
-
     push_handle(handle_);
     (push(handle_.ctx(), std::forward<decltype(args)>(args)), ...);
 
