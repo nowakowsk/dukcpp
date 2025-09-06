@@ -10,7 +10,7 @@ While dukcpp does some heavy-lifting when it comes to making binding easier, it 
 - Unintrusive binding
 - Support for fundamental types (integer, floating-point, `bool` and `enum`)
 - Support for strings (`const char*`, `std::string`, `std::string_view` and custom string types)
-- User type bindings
+- Support for user-defined types
 - Function and functor bindings with parameter validation
 - Support for virtual functions and inheritance
 - Support for ranges and iterators
@@ -477,7 +477,7 @@ C++ objects used as writable properties need to be assignable.
 
 #### Virtual properties
 
-dukcpp allows binding class methods as virtual ES properties. Let's consider an alternative `Vector` implemantation, which uses accessors instead of public members.
+dukcpp allows binding class methods as virtual ES properties. Let's consider an alternative `Vector` implementation, which uses accessors instead of public members.
 
 ```cpp
 struct Vector
