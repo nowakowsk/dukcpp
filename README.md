@@ -101,7 +101,7 @@ More usage examples can be found in unit tests (`test/`) and duk project (`duk/`
 
 ## Interacting with Duktape value stack
 
-Duktape provides a set of `duk_push_*` and `duk_get_*` functions for working with value stack. Similarly, dukcpp wraps and gathers those functions under overloaded `duk::push` and `duk::get` functions. Those overloads handle a wide set of types, including callable and user-defines types.
+Duktape provides a set of `duk_push_*` and `duk_get_*` functions for working with value stack. Similarly, dukcpp wraps and gathers those functions under overloaded `duk::push` and `duk::get` functions. Those overloads handle a wide set of types, including callable and user-defined types.
 
 ```cpp
 duk::push(ctx, 10); // Pushed type is deduced from function parameters.
@@ -432,7 +432,7 @@ There are situations where it might be desirable to bind free functions as class
 Vector operator-(const Vector& lhs, float rhs);
 ```
 
-It's reasonable that user might want to call it in ES code in the following manner.
+It's reasonable that user might want to use it in ES code in the following manner.
 
 ```javascript
 var vec1 = new Vector(1, 1);
@@ -452,7 +452,7 @@ duk::put_prop_function<
 
 With additional information about desired method signature, dukcpp will consider function's first parameter as `this` pointer to `Vector` object.
 
-In many cases, desired method signature can be deduced automatically. For those situations, dukcpp provides two helper functions: `duk::push_method` and `duk::put_prop_method`. They come in constexpr and non-constexpr variants, and can be used in the following way.
+In many cases, method signature can be deduced automatically. For those situations, dukcpp provides two helper functions: `duk::push_method` and `duk::put_prop_method`. They come in constexpr and non-constexpr variants, and can be used in the following way.
 
 ```cpp
 duk::put_prop_method<
@@ -521,7 +521,7 @@ Example code for registering a similar class can be found in `test/vector.cpp`.
 
 ### Prototypes
 
-As described in [User types](#user-types) section, when a new object is pushed from C++ code to ES context, it is automatically wrapped in an ES `Object`. By default, such object doesn't have prototype defined, which limits what we can do with it. To address that problem, dukcpp allows user to explicitly specify the prototype object in `duk::push` call.
+As described in [User types](#user-types) section, when a new object is pushed from C++ code to ES context, it is automatically wrapped in an ES `Object`. By default, such object doesn't have a prototype defined, which limits what we can do with it. To address that problem, dukcpp allows user to explicitly specify a prototype object in `duk::push` call.
 
 ```cpp
 struct S {};
@@ -537,7 +537,7 @@ duk::push(ctx, S{}, prototypeHeapPtr);
 
 But what about situations where we can't specify the prototype explicitly? For example, when an object is returned from a C++ function called in ES context. In this case, we don't have information about our object's prototype.
 
-To solve that, dukcpp introduces static prototypes. They are defined by specializing `duk::class_traits_prototype` class template, and defining a static `get` function, which returns heap pointer to prototype `Object` for a given C++ type.
+To solve that, dukcpp introduces static prototypes. They are defined by specializing `duk::class_traits_prototype` class template, and defining a static `get` function, which returns heap pointer to the prototype `Object` for a given C++ type.
 
 ```cpp
 #include <duk/class.h>
@@ -583,9 +583,9 @@ struct class_traits<MyClass>
 } // namespace duk
 ```
 
-Now whenever an ES function expects `MyClass` parameter, it will also accept `MyBaseClass` objects.
+Now whenever an ES function expects `MyBaseClass` parameter, it will also accept `MyClass` objects.
 
-In ES context, it is up to the user to make sure the prototype chain of bound classes reflects their inheritance relations in C++.
+In ES context, it is up to the user to make sure the prototype chain of bound classes reflects their inheritance relations in C++ code.
 
 See `test/inheritance.cpp` for an example.
 
@@ -607,7 +607,7 @@ dukcpp allows iteration over ES containers in C++ code. It supports ES arrays an
 
   Input range for iterating over ES objects compliant with `[Symbol.iterator]` iterable protocol. To guarantee safety, it must be used with owning handles (`duk::safe_handle`). This makes it slower.
 
-- `duk::input_iterator`
+- `duk::input_range`
 
   Input range defined as a combination of array and symbol ranges. It works for arrays and iterable objects, depending on the type. It is most versatile, but suffers from the same limitations as symbol range.
 
@@ -695,20 +695,20 @@ duk::push(ctx, s);
 
 Now, as long as either C++ or ES code holds a shared pointer to our object, we are safe in both contexts.
 
-Next, let's consider the following C++ code.
+Next, let's consider the following C++ code, in which we want to call a function taking a reference, but our object is wrapped in a smart pointer.
 
 ```cpp
 void func(S& s) {}
 
 // ...
 
-func(s);  // error
+func(s);  // error, because s needs to dereferenced first
 func(*s); // ok
 ```
 
 In order to call `func`, `s` pointer needs to be dereferenced. However, dukcpp doesn't know that - ES `Object` holds smart pointer, and simply tries to pass it to `func`. Clearly, we need some sort of adapter here, and that's where type adapters come in.
 
-Type adapter is a function which converts one type (smart pointer) to another one (reference to object pointed by the smart pointer) during dukcpp function call. It is defined by specializing `duk::type_adapter` class template.
+Type adapter is a function which converts one type (in our case, a smart pointer) to another one (reference to object pointed by the smart pointer) during dukcpp function call. It is defined by specializing `duk::type_adapter` class template.
 
 ```cpp
 namespace duk
@@ -781,7 +781,7 @@ struct CustomAllocator;
 
 using Alloc = duk::allocator_adapter<CustomAllocator>;
 
-auto alloc = Alloc(CustomAllocator(some, custom, allocator, parameters));
+auto alloc = Alloc(CustomAllocator(/* optional custom allocator parameters */));
 auto ctx = duk_create_heap(Alloc::alloc, Alloc::realloc, Alloc::free, &alloc, errorHandler);
 ```
 
