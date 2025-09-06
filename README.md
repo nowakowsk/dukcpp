@@ -611,7 +611,7 @@ dukcpp allows iteration over ES containers in C++ code. It supports ES arrays an
 
   Input range defined as a combination of array and symbol ranges. It works for arrays and iterable objects, depending on the type. It is most versatile, but suffers from the same limitations as symbol range.
 
-In most cases, there is no reason to use `duk::symbol_input_range` since `duk::input_iterator` offers more functionality with minimum overhead.
+In most cases, there is no reason to use `duk::symbol_input_range` since `duk::input_range` offers more functionality with minimum overhead.
 
 Using dukcpp ranges and iterators directly in user interfaces could be definitely considered intrusive. Their primary use is creating adapter functions to user interfaces.
 
@@ -628,7 +628,7 @@ Handles are objects pointing to Duktape heap-allocated values. dukcpp comes with
 
 - `duk::safe_handle`
 
-  Owning handle. Safer, but slow. It prevents pointed value from being garbage collected by putting it into Duktape global stash. It keeps track of the number of references to the pointed value in C++ code by reference counting.
+  Owning handle. Safe, but slower. It prevents pointed value from being garbage collected by putting it into Duktape global stash. It keeps track of the number of references to the pointed value in C++ code by reference counting.
 
 Both types are copyable and movable. Moving from a handle, invalidates it.
 
