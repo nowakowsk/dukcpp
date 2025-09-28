@@ -8,10 +8,12 @@
 #include <duk/callable_std_function.h>
 #include <catch2/catch_test_macros.hpp>
 #include <catch2/catch_template_test_macros.hpp>
+#include <algorithm>
 #include <cstring>
 #include <numeric>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 
 // Check if iterators and ranges conform to standard requirements of their categories.
@@ -1087,7 +1089,7 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
     duk_pop(ctx_);
   }
 
-  SECTION("Symbol.iterator")
+  SECTION("Iterable ES object")
   {
     duk_peval_string(ctx_, R"__(
       var iterableObject = {
@@ -1122,7 +1124,7 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
     duk_pop(ctx_);
   }
 
-  SECTION("Symbol.iterator (next() throws)")
+  SECTION("Iterable ES object (next() throws)")
   {
     duk_peval_string_noresult(ctx_, R"__(
       var iterableObject = {
@@ -1140,6 +1142,64 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
       sumRange(iterableObject);
     )__");
   }
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Iterable native object")
+{
+  duk_push_global_object(ctx_);
+
+  SECTION("Iterable object")
+  {
+    duk::push(ctx_, std::vector<int>{ 1, 2, 3 });
+    duk::make_iterable<std::vector<int>>(ctx_, -1);
+    duk_put_prop_literal(ctx_, -2, "range");
+  }
+
+  SECTION("Iterable function return value")
+  {
+    // duk::iterable_traits_type<std::list<T>> specialization in common.h.
+    SECTION("duk::iterable_traits_type")
+    {
+      static constexpr auto make_range = []()
+      {
+        return std::list<int>{ 1, 2, 3 };
+      };
+      
+      duk::put_prop_function<make_range>(ctx_, -1, "make_range");
+    }
+
+    SECTION("duk::as_iterable")
+    {
+      static constexpr auto make_range = []()
+      {
+        return std::vector<int>{ 1, 2, 3 };
+      };
+
+      duk::put_prop_function<
+        duk::function_descriptor<make_range, duk::as_iterable<std::vector<int>>()>
+      >(ctx_, -1, "make_range");
+    }
+
+    duk_peval_string(ctx_, R"__(
+      var range = make_range();
+    )__");
+  }
+
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, R"__(
+    var sum = 0;
+    var iter = range[Symbol.iterator]();
+    do
+    {
+      var node = iter.next();
+      if (!node.done)
+        sum += node.value;
+    } while (!node.done);
+    (sum);
+  )__");
+  REQUIRE(duk::get<int>(ctx_, -1) == 6);
 }
 
 

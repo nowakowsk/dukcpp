@@ -2,6 +2,7 @@
 #define DUKCPP_RANGE_H
 
 #include <duk/error.h>
+#include <duk/fwd.h>
 #include <duk/safe_handle.h>
 #include <duk/scoped_pop.h>
 #include <iterator>
@@ -11,15 +12,6 @@
 
 namespace duk
 {
-
-
-namespace detail
-{
-
-template<typename T>
-struct type_traits;
-
-} // namespace detail
 
 
 template<typename T, handle_type Handle>

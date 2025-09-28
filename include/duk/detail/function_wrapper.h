@@ -1,7 +1,7 @@
 #ifndef DUKCPP_DETAIL_FUNCTION_WRAPPER_H
 #define DUKCPP_DETAIL_FUNCTION_WRAPPER_H
 
-#include <duk/detail/type_traits.h>
+#include <duk/fwd.h>
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
 #include <functional>
@@ -22,7 +22,7 @@ namespace detail
 {
 
 
-static duk_ret_t throwESError(duk_context* ctx, duk_errcode_t errorCode, std::string_view message)
+inline static duk_ret_t throwESError(duk_context* ctx, duk_errcode_t errorCode, std::string_view message)
 {
   duk_int_t lineNumber = 0;
   const char* fileName = nullptr;

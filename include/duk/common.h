@@ -3,6 +3,7 @@
 
 #include <duk/allocator.h>
 #include <duk/error.h>
+#include <duk/fwd.h>
 #include <boost/callable_traits.hpp>
 #include <duktape.h>
 #include <utility>
@@ -13,15 +14,6 @@
 
 namespace duk
 {
-
-
-namespace detail
-{
-
-template<typename T>
-struct type_traits;
-
-} // namespace detail
 
 
 template<typename T>

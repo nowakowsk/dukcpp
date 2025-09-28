@@ -2,24 +2,13 @@
 #define DUKCPP_TYPE_TRAITS_HELPERS_H
 
 #include <duk/error.h>
+#include <duk/fwd.h>
 #include <duktape.h>
 #include <utility>
 
 
 namespace duk
 {
-
-
-namespace detail
-{
-
-template<typename T>
-struct type_traits;
-
-static bool finalize_object(duk_context* ctx, duk_idx_t idx);
-static bool finalize_callable(duk_context* ctx, duk_idx_t idx);
-
-} // namespace detail
 
 
 template<typename T>

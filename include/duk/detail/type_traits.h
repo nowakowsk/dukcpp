@@ -5,6 +5,7 @@
 #include <duk/common.h>
 #include <duk/error.h>
 #include <duk/function_handle.h>
+#include <duk/iterable.h>
 #include <duk/range.h>
 #include <duk/scoped_pop.h>
 #include <duk/string_traits.h>
@@ -185,11 +186,9 @@ static constexpr auto type_traits_object_info_name = std::string_view(DUKCPP_DET
 
 
 template<typename T>
-struct type_traits
+struct type_traits_generic
 {
   using DecayT = std::decay_t<T>;
-
-  static constexpr bool is_object = true;
 
   static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
   {
@@ -273,7 +272,31 @@ struct type_traits
 };
 
 
-inline static bool finalize_object(duk_context* ctx, duk_idx_t idx)
+template<typename T>
+struct type_traits
+{
+  static constexpr bool is_object = true;
+
+  static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
+  {
+    type_traits_generic<T>::push(ctx, std::forward<decltype(obj)>(obj), prototype_heap_ptr);
+  }
+
+  [[nodiscard]]
+  static decltype(auto) get(duk_context* ctx, duk_idx_t idx)
+  {
+    return type_traits_generic<T>::get(ctx, idx);
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
+  {
+    return type_traits_generic<T>::check_type(ctx, idx);
+  }
+};
+
+
+inline bool finalize_object(duk_context* ctx, duk_idx_t idx)
 {
   scoped_pop _(ctx); // duk_get_prop_string
   if (!get_prop_string(ctx, idx, type_traits_object_info_name))
@@ -398,7 +421,7 @@ struct type_traits<T>
 };
 
 
-inline static bool finalize_callable(duk_context* ctx, duk_idx_t idx)
+inline bool finalize_callable(duk_context* ctx, duk_idx_t idx)
 {
   scoped_pop _(ctx); // duk_get_prop_string
   if (!get_prop_string(ctx, idx, type_traits_func_info_name))
@@ -412,6 +435,33 @@ inline static bool finalize_callable(duk_context* ctx, duk_idx_t idx)
 
   return del_prop_string(ctx, idx - 2, type_traits_func_info_name);
 }
+
+
+template<iterable T>
+struct type_traits<T>
+{
+  using IterableT = iterable_traits_type_t<T>;
+
+  static constexpr bool is_object = true;
+
+  static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
+  {
+    type_traits_generic<IterableT>::push(ctx, std::forward<decltype(obj)>(obj), prototype_heap_ptr);
+    make_iterable<IterableT>(ctx, -1);
+  }
+
+  [[nodiscard]]
+  static decltype(auto) get(duk_context* ctx, duk_idx_t idx)
+  {
+    return type_traits_generic<IterableT>::get(ctx, idx);
+  }
+
+  [[nodiscard]]
+  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
+  {
+    return type_traits_generic<IterableT>::check_type(ctx, idx);
+  }
+};
 
 
 template<typename ...Ts>
@@ -461,6 +511,19 @@ struct type_traits<input_range<Ts...>>
   static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
     return duk_is_array(ctx, idx) || duk_is_object(ctx, idx);
+  }
+};
+
+
+template<handle_type T>
+struct type_traits<T>
+{
+  static void push(duk_context* ctx, T hnd)
+  {
+    if (ctx != hnd.ctx())
+      throw error(ctx, "invalid handle context");
+
+    duk_push_heapptr(ctx, hnd.heap_ptr());
   }
 };
 

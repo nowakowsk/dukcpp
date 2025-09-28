@@ -1,8 +1,8 @@
 #ifndef DUKCPP_FUNCTION_HELPERS_H
 #define DUKCPP_FUNCTION_HELPERS_H
 
+#include <duk/callable.h>
 #include <duk/detail/function_wrapper.h>
-#include <duk/detail/type_traits.h>
 #include <duktape.h>
 #include <string_view>
 #include <utility>

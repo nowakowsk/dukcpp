@@ -2,8 +2,10 @@
 #define DUKCPP_TEST_COMMON_H
 
 #include <duk/class.h>
+#include <duk/iterable.h>
 #include <duk/type_adapter.h>
 #include <cmath>
+#include <list>
 #include <memory>
 #include <string>
 #include <string_view>
@@ -30,6 +32,13 @@ struct type_adapter<std::shared_ptr<T>>
   {
     return *ptr;
   }
+};
+
+
+template<typename T>
+struct iterable_traits_type<std::list<T>>
+{
+  using type = std::list<T>;
 };
 
 

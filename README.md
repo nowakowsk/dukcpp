@@ -595,27 +595,129 @@ See `test/inheritance.cpp` for an example.
 Objects and callables bound with dukcpp can be finalized manually, before GC decides to do so. This may be useful in case of large objects or resource wrappers (e.g. files, threads, etc.). Early finalization can be forced with `duk::finalize` function. Accessing finalized object will result in an error.
 
 
-## Ranges and iterators
+## Iterable objects
 
-dukcpp allows iteration over ES containers in C++ code. It supports ES arrays and containers compliant with `[Symbol.iterator]` protocol.
+dukcpp supports iteration over containers, generators and other iterable objects, both in ES and C++ code. On C++ side, it supports ES arrays and objects compliant with `[Symbol.iterator]` protocol. On ES side, C++ containers can be iterated by wrapping them in ES objects implementing `[Symbol.iterator]` protocol.
+
+
+### Iteration over ES objects in C++
+
+User can use `duk::get` to create an iterable range for an ES object.
+
+```cpp
+duk_peval_string(ctx_, "([1, 2, 3])");
+auto r = duk::get<duk::safe_array_input_range<int>>(ctx_, -1);
+auto sum = std::accumulate(r.begin(), r.end(), 0); // "sum" equals 6.
+```
+
+It is also possible to take iterable objects as function parameters.
+
+```cpp
+// Let's assume we want to call the following function from ES to sum some integer values.
+// Notice we don't use any part of dukcpp in the interface.
+static constexpr auto sum = [](const std::vector<int>& v)
+{
+  return std::accumulate(v.begin(), v.end(), 0);
+};
+
+// Now, we wrap it in a function that tells dukcpp we want to treat the parameter as a range.
+// This allows us to bind user-defined functions in an non-intrusive way.
+static constexpr auto sum_wrap = [](duk::safe_array_input_range<int> r)
+{
+  return sum({ r.begin(), r.end() });
+};
+
+// We bind the wrapper, and call it from ES.
+duk::put_prop_function<sum_wrap>(ctx_, -1, "sum");
+duk_peval_string(ctx_, "sum([1, 2, 3]);"); // Puts 6 on ES value stack.
+```
+
+dukcpp offers several range types, each suitable for a different use case:
 
 - `duk::array_input_range`
 
-  Random-access range for iterating over ES arrays. It's the fastest of dukcpp range types, and the only one which can be safely used with non-owning handles (`duk::handle`) for iteration over containers on the call stack.
+  Random-access range for iterating over ES arrays.
 
 - `duk::symbol_input_range`
 
-  Input range for iterating over ES objects compliant with `[Symbol.iterator]` iterable protocol. To guarantee safety, it must be used with owning handles (`duk::safe_handle`). This makes it slower.
+  Forward range for iterating over ES objects compliant with `[Symbol.iterator]` protocol.
 
 - `duk::input_range`
 
-  Input range defined as a combination of array and symbol ranges. It works for arrays and iterable objects, depending on the type. It is most versatile, but suffers from the same limitations as symbol range.
+  Range defined as a combination of array and symbol range. It works for arrays and iterable objects, depending on the type, making it the most versatile.
 
-In most cases, there is no reason to use `duk::symbol_input_range` since `duk::input_range` offers more functionality with minimum overhead.
+In most cases, there is no reason to use `duk::array_input_range` or `duk::symbol_input_range` since `duk::input_range` offers more functionality with minimum overhead.
 
-Using dukcpp ranges and iterators directly in user interfaces could be definitely considered intrusive. Their primary use is creating adapter functions to user interfaces.
+Internally, dukcpp ranges and iterators keep [handles](#handles) to iterated objects. Just as with dukcpp handles, they come in two variants - safe and unsafe. Unsafe ranges (listed above) use `duk::handle`, and need to be used with care, not to end up with a dangling range.
 
-Currently, iteration over C++ containers in ES code is not supported.
+Additionally, dukcpp offers safe variants of these ranges, which use `duk::safe_handle` internally:
+
+- `duk::safe_array_input_range` 
+- `duk::safe_symbol_input_range`
+- `duk::safe_input_range`
+
+It is generally advised to use safe ranges, unless user is certain their internal handles can never dangle.
+
+Using dukcpp ranges and iterators directly in user interfaces could be definitely considered intrusive. Their primary use is creating non-intrusive adapter functions to user interfaces.
+
+
+### Iteration over C++ containers in ES
+
+dukcpp makes it easy to pass an iterable C++ objects to ES code, so they can be iterated over with `[Symbol.iterator]`. Such C++ objects should satisfy requirements of `std::ranges::forward_range` concept, however this isn't currently formally required.
+
+Passing an iterable object to ES is done as follows.
+
+```cpp
+// Push an iterable object like any other.
+duk::push(ctx_, std::vector<int>{1, 2, 3});
+
+// Define [Symbol.iterator] for the pushed object.
+duk::make_iterable<std::vector<int>>(ctx_, -1);
+```
+
+When it comes to returning iterable C++ objects from functions, we have two methods of doing that.
+
+```cpp
+// Method 1
+//
+// Explicitly specify signature of the bound function, and wrap the returned
+// type in "duk::as_iterable" template.
+
+static constexpr auto make_range = []()
+{
+  return std::vector<int>{ 1, 2, 3 };
+};
+
+duk::put_prop_function<
+  duk::function_descriptor<make_range, duk::as_iterable<std::vector<int>>()>
+>(ctx_, -1, "make_range");
+```
+
+Alternatively, if the first method seems too verbose, user can designate selected types to be always treated as iterable, by specializing `duk::iterable_traits_type`.
+
+```cpp
+// Method 2
+
+namespace duk
+{
+
+template<typename T>
+struct iterable_traits_type<std::vector<T>>
+{
+  using type = std::vector<T>;
+};
+
+} // namespace duk
+
+static constexpr auto make_range = []()
+{
+  return std::vector<int>{ 1, 2, 3 };
+};
+
+duk::put_prop_function<make_range>(ctx_, -1, "make_range");
+```
+
+This way, whenever dukcpp encounters `std::vector<T>` being returned from a function, it will automatically assume it should be treated as an iterable object, and appropriate `[Symbol.iterator]` will be defined.
 
 
 ## Handles

@@ -16,6 +16,7 @@
 #include <duk/enum_helpers.h>
 #include <duk/error.h>
 #include <duk/handle.h>
+#include <duk/iterable.h>
 #include <duk/type_traits_helpers.h>
 #include <duk/function_handle.h>
 #include <duk/function_helpers.h>
