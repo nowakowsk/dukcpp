@@ -12,7 +12,12 @@ namespace detail
 {
 
 
-template<typename T>
+struct type_traits_options
+{
+  bool iterable = false;
+};
+
+template<typename T, type_traits_options options = type_traits_options{}>
 struct type_traits;
 
 bool finalize_object(duk_context* ctx, duk_idx_t idx);

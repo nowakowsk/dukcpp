@@ -1169,6 +1169,16 @@ TEST_CASE_METHOD(DukCppTest, "Iterable native object")
       duk::put_prop_function<make_range>(ctx_, -1, "make_range");
     }
 
+    SECTION("Adapted duk::iterable_traits_type")
+    {
+      static constexpr auto make_range = []()
+      {
+        return std::make_shared<std::list<int>>(std::list<int>{ 1, 2, 3 });
+      };
+      
+      duk::put_prop_function<make_range>(ctx_, -1, "make_range");
+    }
+
     SECTION("duk::as_iterable")
     {
       static constexpr auto make_range = []()

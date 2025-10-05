@@ -185,10 +185,12 @@ private:
 static constexpr auto type_traits_object_info_name = std::string_view(DUKCPP_DETAIL_INTERNAL_NAME("objInfo"));
 
 
-template<typename T>
-struct type_traits_generic
+template<typename T, type_traits_options options>
+struct type_traits
 {
   using DecayT = std::decay_t<T>;
+
+  static constexpr bool is_object = true;
 
   static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
   {
@@ -238,6 +240,9 @@ struct type_traits_generic
       duk_push_heapptr(ctx, prototype_heap_ptr);
       duk_set_prototype(ctx, -2);
     }
+
+    if constexpr (iterable<AdaptedT> || options.iterable)
+      make_iterable<AdaptedT>(ctx, -1);
   }
 
   [[nodiscard]]
@@ -268,30 +273,6 @@ struct type_traits_generic
     auto objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
 
     return objInfo->checkType(type_id<DecayT>());
-  }
-};
-
-
-template<typename T>
-struct type_traits
-{
-  static constexpr bool is_object = true;
-
-  static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
-  {
-    type_traits_generic<T>::push(ctx, std::forward<decltype(obj)>(obj), prototype_heap_ptr);
-  }
-
-  [[nodiscard]]
-  static decltype(auto) get(duk_context* ctx, duk_idx_t idx)
-  {
-    return type_traits_generic<T>::get(ctx, idx);
-  }
-
-  [[nodiscard]]
-  static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
-  {
-    return type_traits_generic<T>::check_type(ctx, idx);
   }
 };
 
@@ -437,29 +418,30 @@ inline bool finalize_callable(duk_context* ctx, duk_idx_t idx)
 }
 
 
-template<iterable T>
-struct type_traits<T>
+template<typename T>
+struct type_traits<as_iterable<T>>
 {
-  using IterableT = iterable_traits_type_t<T>;
+  using IterableT = iterable_traits_type_t<as_iterable<T>>;
 
   static constexpr bool is_object = true;
 
+  static constexpr auto options = type_traits_options{ .iterable = true };
+
   static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
   {
-    type_traits_generic<IterableT>::push(ctx, std::forward<decltype(obj)>(obj), prototype_heap_ptr);
-    make_iterable<IterableT>(ctx, -1);
+    type_traits<IterableT, options>::push(ctx, std::forward<decltype(obj)>(obj), prototype_heap_ptr);
   }
 
   [[nodiscard]]
   static decltype(auto) get(duk_context* ctx, duk_idx_t idx)
   {
-    return type_traits_generic<IterableT>::get(ctx, idx);
+    return type_traits<IterableT, options>::get(ctx, idx);
   }
 
   [[nodiscard]]
   static bool check_type(duk_context* ctx, duk_idx_t idx) noexcept
   {
-    return type_traits_generic<IterableT>::check_type(ctx, idx);
+    return type_traits<IterableT, options>::check_type(ctx, idx);
   }
 };
 
