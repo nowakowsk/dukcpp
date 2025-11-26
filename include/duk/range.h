@@ -297,8 +297,12 @@ private:
 
     duk_push_literal(ctx, "next");
 
-    scoped_pop __(ctx); // duk_pcall_prop
-    duk_pcall_prop(ctx, -2, 0);
+    scoped_pop __(ctx); // duk_call_prop
+    if (duk_pcall_prop(ctx, -2, 0) != 0)
+    {
+      duk_throw(ctx);
+      return;
+    }
 
     if (!duk_is_object(ctx, -1)) [[unlikely]]
       throw error(ctx, "symbol iterator returned invalid value");

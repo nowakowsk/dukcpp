@@ -1095,18 +1095,49 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
       var iterableObject = {
         [Symbol.iterator]: function()
         {
+          return {
+            n: 0,
+            next: function()
+            {
+              var done = false;
+              if (this.n == 5)
+                done = true;
+
+              return { value: this.n++, done };
+            }
+          };
+        }
+      };
+
+      sumRange(iterableObject);
+    )__");
+    REQUIRE(duk::get<int>(ctx_, -1) == 10);
+    duk_pop(ctx_);
+
+    duk_peval_string(ctx_, R"__(
+      sumRanges(iterableObject, iterableObject);
+    )__");
+    REQUIRE(duk::get<std::string>(ctx_, -1) == "0 2 4 6 8 ");
+    duk_pop(ctx_);
+  }
+
+  SECTION("Iterable ES object (last element without value)")
+  {
+    duk_peval_string(ctx_, R"__(
+      var iterableObject = {
+        [Symbol.iterator]: function()
+        {
           var n = 0;
-          var done = false;
 
           return {
             next: function()
             {
-              n += 1;
+              n++;
 
               if (n == 5)
-                done = true;
+                return { done: true };
 
-              return { value: n, done: done };
+              return { value: n, done: false };
             }
           };
         }

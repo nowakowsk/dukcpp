@@ -26,8 +26,43 @@ public:
     return message_.c_str();
   }
 
-private:
+protected:
   detail::string message_;
+};
+
+
+class es_error : public error
+{
+public:
+  es_error(duk_context* ctx, duk_idx_t idx) :
+    error(ctx, {}),
+    name(detail::make_string(ctx)),
+    message(detail::make_string(ctx)),
+    filename(detail::make_string(ctx))
+  {
+    if (duk_get_prop_string(ctx, idx, "name"))
+      name = detail::make_string(ctx, duk_get_string(ctx, -1));
+    duk_pop(ctx);
+
+    if (duk_get_prop_string(ctx, idx, "message"))
+      message = detail::make_string(ctx, duk_get_string(ctx, -1));
+    duk_pop(ctx);
+
+    if (duk_get_prop_string(ctx, idx, "fileName"))
+      filename = detail::make_string(ctx, duk_get_string(ctx, -1));
+    duk_pop(ctx);
+
+    if (duk_get_prop_string(ctx, idx, "lineNumber"))
+      line = duk_get_int(ctx, -1);
+    duk_pop(ctx);
+
+    message_ = filename + "(" + detail::to_string(ctx, line) + "): " + name + ": " + message;
+  }
+
+  detail::string name;
+  detail::string message;
+  detail::string filename;
+  duk_int_t line = 0;
 };
 
 

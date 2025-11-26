@@ -253,7 +253,7 @@ struct type_traits
     // I am not sure how bad it is for the performance, but could be significant. Consider optimizing it somehow.
     scoped_pop _(ctx); // get_prop_string
     if (!get_prop_string(ctx, idx, type_traits_object_info_name))
-      throw error(ctx, "Accessing invalid or finalized object.");
+      throw error(ctx, "accessing invalid or finalized object");
 
     auto objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
 
@@ -339,7 +339,7 @@ struct type_traits<T>
       duk_push_current_function(ctx);
 
       if (!get_prop_string(ctx, -1, type_traits_func_info_name))
-        throw error(ctx, "Called invalid or finalized function.");
+        throw error(ctx, "called invalid or finalized function");
 
       auto funcPtr = static_cast<DecayFunc*>(duk_get_pointer(ctx, -1));
       duk_pop_2(ctx);
@@ -412,7 +412,8 @@ inline bool finalize_callable(duk_context* ctx, duk_idx_t idx)
   duk_dup(ctx, idx - 2);
 
   scoped_pop __(ctx); // duk_pcall
-  duk_pcall(ctx, 1);
+  if (duk_pcall(ctx, 1) != DUK_EXEC_SUCCESS)
+    throw duk::es_error(ctx, -1);
 
   return del_prop_string(ctx, idx - 2, type_traits_func_info_name);
 }

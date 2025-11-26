@@ -58,7 +58,7 @@ auto* make(duk_context* ctx, auto&&... args)
 {
   auto objBuffer = allocator<T>(ctx).allocate(1);
   if (!objBuffer) [[unlikely]]
-    throw error(ctx, "Memory allocation failed.");
+    throw error(ctx, "memory allocation failed");
 
   return new (objBuffer) T(std::forward<decltype(args)>(args)...);
 }

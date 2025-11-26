@@ -32,7 +32,9 @@ using iterable_traits_type_t = iterable_traits_type<T>::type;
 // as_iterable
 
 template<typename T>
-struct as_iterable;
+struct as_iterable
+{
+};
 
 
 template<typename T>

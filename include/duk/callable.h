@@ -45,7 +45,9 @@ using callable_traits_signature_pack_t = callable_traits_signature_pack<T>::type
 // as_function
 
 template<typename T>
-struct as_function;
+struct as_function
+{
+};
 
 
 template<typename T>

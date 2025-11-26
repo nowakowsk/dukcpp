@@ -25,13 +25,16 @@ public:
 
   decltype(auto) operator()(auto&& ...args) const
   {
+    auto ctx = handle_.ctx();
+
     push_handle(handle_);
-    (push(handle_.ctx(), std::forward<decltype(args)>(args)), ...);
+    (push(ctx, std::forward<decltype(args)>(args)), ...);
 
-    scoped_pop _(handle_.ctx()); // duk_pcall
-    duk_pcall(handle_.ctx(), sizeof...(args));
+    scoped_pop _(ctx); // duk_pcall
+    if (duk_pcall(ctx, sizeof...(args)) != DUK_EXEC_SUCCESS)
+      throw duk::es_error(ctx, -1);
 
-    return safe_get<Result>(handle_.ctx(), -1);
+    return safe_get<Result>(ctx, -1);
   }
 
 private:

@@ -39,43 +39,16 @@ void print(const char* text)
 }
 
 
-[[nodiscard]]
-std::string duktapeErrorToString(duk_context* ctx, duk_idx_t objIdx)
-{
-  std::string name("-");
-  std::string message("-");
-  std::string fileName("-");
-  std::string line("-");
-
-  if(duk_get_prop_string(ctx, objIdx, "name"))
-    name = duk_get_string(ctx, -1);
-  duk_pop(ctx);
-
-  if(duk_get_prop_string(ctx, objIdx, "message"))
-    message = duk_get_string(ctx, -1);
-  duk_pop(ctx);
-
-  if(duk_get_prop_string(ctx, objIdx, "fileName"))
-    fileName = duk_get_string(ctx, -1);
-  duk_pop(ctx);
-
-  if(duk_get_prop_string(ctx, objIdx, "lineNumber"))
-    line = std::to_string(duk_get_int(ctx, -1));
-  duk_pop(ctx);
-
-  return fileName + "(" + line + "): " + name + ": " + message;
-}
-
-
 } // namespace
 
 
 int main(int argc, char* argv[])
 {
+  auto ctx = duk::context(duk_create_heap(nullptr, nullptr, nullptr, nullptr, errorHandler));
+
   try
   {
     auto options = parseOptions(argc, argv);
-    auto ctx = duk::context(duk_create_heap(nullptr, nullptr, nullptr, nullptr, errorHandler));
     auto source = readFile(options.input);
 
     duk_push_global_object(ctx);
@@ -85,7 +58,7 @@ int main(int argc, char* argv[])
     duk_push_string(ctx, options.input.c_str());
     if (duk_pcompile_lstring_filename(ctx, 0, source.data(), source.size()) != 0)
     {
-      throw std::runtime_error(duktapeErrorToString(ctx, -1));
+      throw duk::es_error(ctx, -1);
     }
     else
     {
@@ -94,7 +67,7 @@ int main(int argc, char* argv[])
         debugCtx.emplace(ctx, options.debugPort);
 
       if (duk_pcall(ctx, 0) != DUK_EXEC_SUCCESS)
-        throw std::runtime_error(duktapeErrorToString(ctx, -1));
+        throw duk::es_error(ctx, -1);
     }
   }
   catch (std::exception& e)
