@@ -37,6 +37,8 @@ struct ObjectInfo
 
   virtual void finalize() noexcept = 0;
 
+  virtual void clone() = 0;
+
   // What's happening here is quite hard to follow, so here is a short explanation.
   //
   // Depending on whether requested T has a type adapter, we return either T (adapter exists) or T& (adapter
@@ -106,6 +108,14 @@ struct ObjectInfoImpl : ObjectInfo
   void finalize() noexcept override
   {
     free(ctx_, this);
+  }
+
+  void clone() override
+  {
+    if constexpr (is_type_adapter_cloneable<T>)
+      push(ctx_, type_adapter_cloneable<T>::clone(obj_));
+    else
+      throw error(ctx_, "type not cloneable");
   }
 
 private:
@@ -416,6 +426,24 @@ inline bool finalize_callable(duk_context* ctx, duk_idx_t idx)
     throw duk::es_error(ctx, -1);
 
   return del_prop_string(ctx, idx - 2, type_traits_func_info_name);
+}
+
+
+inline bool clone(duk_context* ctx, duk_idx_t idx)
+{
+  ObjectInfo* objInfo = nullptr;
+
+  {
+    scoped_pop _(ctx); // duk_get_prop_string
+    if (!get_prop_string(ctx, idx, type_traits_object_info_name))
+      return false;
+
+    objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
+  }
+
+  objInfo->clone();
+
+  return true;
 }
 
 

@@ -10,6 +10,25 @@ Vector::Vector(float x, float y) :
 }
 
 
+Vector::Vector(const Vector& other) :
+  x(other.x),
+  y(other.y)
+{
+}
+
+
+Vector& Vector::operator=(const Vector& other)
+{
+  if (this != &other)
+  {
+    x = other.x;
+    y = other.y;
+  }
+
+  return *this;
+}
+
+
 bool Vector::operator==(const Vector& other) const
 {
   return x == other.x &&

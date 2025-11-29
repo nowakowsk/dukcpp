@@ -61,6 +61,12 @@ inline static bool finalize(duk_context* ctx, duk_idx_t idx)
 }
 
 
+inline static bool clone(duk_context* ctx, duk_idx_t idx)
+{
+  return detail::clone(ctx, idx);
+}
+
+
 } // namespace duk
 
 

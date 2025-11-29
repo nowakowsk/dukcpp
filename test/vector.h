@@ -10,6 +10,10 @@ struct Vector
   Vector() = default;
   Vector(float x, float y);
 
+  Vector(const Vector& other);
+
+  Vector& operator=(const Vector& other);
+
   bool operator==(const Vector& other) const;
 
   [[nodiscard]]

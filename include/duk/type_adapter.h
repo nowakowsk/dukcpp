@@ -1,6 +1,7 @@
 #ifndef DUKCPP_TYPE_ADAPTER_H
 #define DUKCPP_TYPE_ADAPTER_H
 
+#include <concepts>
 #include <type_traits>
 
 
@@ -59,6 +60,28 @@ struct type_adapter_base<T>
 
 template<typename T>
 using type_adapter_base_t = typename type_adapter_base<T>::type;
+
+
+// type_adapter_cloneable
+
+template<typename T>
+struct type_adapter_cloneable;
+
+template<std::copy_constructible T>
+struct type_adapter_cloneable<T>
+{
+  static T clone(const T& obj)
+  {
+    return obj;
+  }
+};
+
+template<typename T>
+concept is_type_adapter_cloneable = 
+  requires(const T& obj)
+  {
+    { type_adapter_cloneable<T>::clone(obj) } -> std::same_as<T>;
+  };
 
 
 } // namespace duk

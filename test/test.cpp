@@ -877,6 +877,64 @@ TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Manual finalization", "",
 }
 
 
+TEST_CASE_METHOD(DukCppTest, "Clone")
+{
+  static constexpr auto cloneWrap = [](duk_context* ctx) -> duk_ret_t
+  {
+    duk::clone(ctx, 0);
+
+    return 1;
+  };
+
+  duk_push_global_object(ctx_);
+
+  auto prototypeHandle = registerVector(ctx_, -1);
+
+  duk_push_c_function(ctx_, cloneWrap, 1);
+  duk_put_prop_literal(ctx_, -2, "clone");
+
+  duk_pop(ctx_); // Pop global object
+
+  SECTION("Non-adapted")
+  {
+    duk_peval_string(ctx_, R"__(
+      var v1 = new Vector(1, 1);
+      var c1 = clone(v1);
+      c1.x = 2;
+      c1.x;
+    )__");
+    REQUIRE(duk::get<int>(ctx_, -1) == 2);
+
+    duk_peval_string(ctx_, R"__(
+      v1.x;
+    )__");
+    REQUIRE(duk::get<int>(ctx_, -1) == 1);
+  }
+
+  SECTION("Adapted")
+  {
+    // type_adapter_cloneable<std::shared_ptr<T>> specialization in common.h.
+
+    duk_push_global_object(ctx_);
+    duk::push(ctx_, std::make_shared<Vector>(1.0f, 1.0f), prototypeHandle);
+    duk_put_prop_string(ctx_, -2, "v2");
+    duk_pop(ctx_); // Pop global object
+
+    duk_peval_string(ctx_, R"__(
+      var c2 = clone(v2);
+      c2.x = 2;
+      c2.x;
+    )__");
+    REQUIRE(duk::get<int>(ctx_, -1) == 2);
+
+    duk_peval_string(ctx_, R"__(
+      v2.x;
+    )__");
+    REQUIRE(duk::get<int>(ctx_, -1) == 1);
+  }
+}
+
+
 TEST_CASE_METHOD(DukCppTest, "Enum")
 {
   enum class Enum
@@ -1273,6 +1331,6 @@ TEST_CASE_METHOD(DukCppTest, "Generic object binding")
   duk::push_function<f>(ctx_);
   duk::push(ctx_, A{});
   duk::push(ctx_, A{});
-  REQUIRE(duk_pcall(ctx_, 2) != 0); // Call failed with an error.
+  REQUIRE(duk_pcall(ctx_, 2) != DUK_EXEC_SUCCESS); // Call failed with an error.
   duk_pop(ctx_);
 }

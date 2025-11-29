@@ -36,6 +36,16 @@ struct type_adapter<std::shared_ptr<T>>
 
 
 template<typename T>
+struct type_adapter_cloneable<std::shared_ptr<T>>
+{
+  static std::shared_ptr<T> clone(const std::shared_ptr<T>& obj)
+  {
+    return std::make_shared<T>(*obj);
+  }
+};
+
+
+template<typename T>
 struct iterable_traits_type<std::list<T>>
 {
   using type = std::list<T>;

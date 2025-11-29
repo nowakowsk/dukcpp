@@ -590,6 +590,11 @@ In ES context, it is up to the user to make sure the prototype chain of bound cl
 See `test/inheritance.cpp` for an example.
 
 
+### Cloning
+
+ES objects wrapping copy-constructible C++ objects can be cloned using `duk::clone` function.
+
+
 ### Finalization
 
 Objects and callables bound with dukcpp can be finalized manually, before GC decides to do so. This may be useful in case of large objects or resource wrappers (e.g. files, threads, etc.). Early finalization can be forced with `duk::finalize` function. Accessing finalized object will result in an error.
@@ -858,6 +863,31 @@ struct type_adapter<std::shared_ptr<T>>
 ```
 
 Not defining `base` or defining it as `void` means that there is no base adapter.
+
+
+### Cloning
+
+By default, dukcpp clones wrapped object using their copy constructors. This, however, might not be a desired behavior in case of type adapters. For example, let's consider a shared pointer again. By default, cloning a shared pointer results in two pointers to the same object. While this isn't incorrect, user's intent could have been getting a new shared pointer to a new copy of an object (deep copy).
+
+To account for that possibility, dukcpp allows to define custom clone functions for type adapters. It is done by specializing `duk::type_adapter_cloneable`.
+
+```cpp
+namespace duk
+{
+
+template<typename T>
+struct type_adapter_cloneable<std::shared_ptr<T>>
+{
+  static std::shared_ptr<T> clone(const std::shared_ptr<T>& obj)
+  {
+    return std::make_shared<T>(*obj);
+  }
+};
+
+} // namespace duk
+```
+
+Specialization needs to conform to requirements defined by `duk::is_type_adapter_cloneable` concept.
 
 
 # duk project
