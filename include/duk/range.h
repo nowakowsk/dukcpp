@@ -218,6 +218,12 @@ public:
 
   symbol_input_iterator() = default;
 
+  symbol_input_iterator(const symbol_input_iterator&) = delete;
+  symbol_input_iterator(symbol_input_iterator&&) = default;
+
+  symbol_input_iterator& operator=(const symbol_input_iterator&) = delete;
+  symbol_input_iterator& operator=(symbol_input_iterator&&) = default;
+
   [[nodiscard]]
   decltype(auto) operator*() const
   {
@@ -244,15 +250,6 @@ public:
     getNextValue();
 
     return *this;
-  }
-
-  symbol_input_iterator operator++(int)
-  {
-    auto copy = *this;
-
-    operator++();
-  
-    return copy;
   }
 
   [[nodiscard]]
@@ -381,6 +378,12 @@ public:
 
   input_iterator() = default;
 
+  input_iterator(const input_iterator&) = delete;
+  input_iterator(input_iterator&&) = default;
+
+  input_iterator& operator=(const input_iterator&) = delete;
+  input_iterator& operator=(input_iterator&&) = default;
+
   [[nodiscard]]
   decltype(auto) operator*() const
   {
@@ -392,15 +395,6 @@ public:
     std::visit([](auto&& iter) { ++iter; }, impl_);
 
     return *this;
-  }
-
-  input_iterator operator++(int)
-  {
-    auto copy = *this;
-
-    operator++();
-
-    return copy;
   }
 
   [[nodiscard]]
@@ -450,7 +444,7 @@ public:
     impl_(
       [&]() -> input_range_impl
       {
-        if(duk_is_array(ctx, idx))
+        if (duk_is_array(ctx, idx))
           return array_input_range<T, Handle>(ctx, idx);
         else
           return symbol_input_range<T, Handle>(ctx, idx);

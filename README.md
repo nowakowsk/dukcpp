@@ -592,7 +592,7 @@ See `test/inheritance.cpp` for an example.
 
 ### Cloning
 
-ES objects wrapping copy-constructible C++ objects can be cloned using `duk::clone` function.
+ES objects wrapping copy-constructible C++ objects can be cloned using `duk::clone` function. Cloned object is placed at the top of the value stack.
 
 
 ### Finalization
@@ -652,6 +652,8 @@ dukcpp offers several range types, each suitable for a different use case:
   Range defined as a combination of array and symbol range. It works for arrays and iterable objects, depending on the type, making it the most versatile.
 
 In most cases, there is no reason to use `duk::array_input_range` or `duk::symbol_input_range` since `duk::input_range` offers more functionality with minimum overhead.
+
+Iterators produced by `duk::symbol_input_range` (and, by extension, also by `duk::input_range`) are non-copyable. That's because they reference and modify ES iterator object. Such ES objects cannot be reliably copied, and having two C++ iterators modifying the same ES iterator object would be too error-prone. For the same reason, these iterators are only pre-incrementable, because iterator's post-increment operator effectively creates a copy.
 
 Internally, dukcpp ranges and iterators keep [handles](#handles) to iterated objects. Just as with dukcpp handles, they come in two variants - safe and unsafe. Unsafe ranges (listed above) use `duk::handle`, and need to be used with care, not to end up with a dangling range.
 

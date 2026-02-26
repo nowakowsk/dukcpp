@@ -20,15 +20,15 @@
 //
 // NOTE:
 // I don't think duk::array_input_iterator<T> really meets requirements of std::random_access_iterator, because
-// return type of its operator[] isn't always convertible to a reference (this depends on T).
+// return type of its operator[] isn't always convertible to a reference (it depends on T).
 static_assert(std::random_access_iterator<duk::array_input_iterator<int>>);
 static_assert(std::ranges::random_access_range<duk::array_input_range<int>>);
 
-static_assert(std::input_iterator<duk::symbol_input_iterator<int>>);
-static_assert(std::ranges::input_range<duk::symbol_input_range<int>>);
+static_assert(!std::is_copy_constructible_v<duk::symbol_input_iterator<int>>);
+static_assert(!std::is_copy_assignable_v<duk::symbol_input_iterator<int>>);
 
-static_assert(std::input_iterator<duk::input_iterator<int>>);
-static_assert(std::ranges::input_range<duk::input_range<int>>);
+static_assert(!std::is_copy_constructible_v<duk::input_iterator<int>>);
+static_assert(!std::is_copy_assignable_v<duk::input_iterator<int>>);
 
 
 // Check if handles match duk::handle_type concept.
@@ -881,7 +881,7 @@ TEST_CASE_METHOD(DukCppTest, "Clone")
 {
   static constexpr auto cloneWrap = [](duk_context* ctx) -> duk_ret_t
   {
-    duk::clone(ctx, 0);
+    duk::clone(ctx, -1);
 
     return 1;
   };
@@ -1056,8 +1056,7 @@ TEMPLATE_TEST_CASE_METHOD(DukCppTemplateTest, "Ranges (std::input_iterator)", ""
 
   REQUIRE(*(++iter) == 1);
 
-  REQUIRE(*(iter++) == 1);
-  REQUIRE(*iter == 2);
+  REQUIRE(*iter == 1);
 
   REQUIRE(iter == iter);
   REQUIRE(iter != range.end());
@@ -1099,6 +1098,9 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (std::random_access_iterator)")
   REQUIRE(*(iter--) == 1);
   REQUIRE(*iter == 0);
 
+  REQUIRE(*(iter++) == 0);
+  REQUIRE(*(++iter) == 2);
+
   REQUIRE(range.end() - range.begin() == 5);
   REQUIRE(range.begin() + 5 == range.end());
   REQUIRE(range.end() - 5 == range.begin());
@@ -1114,7 +1116,12 @@ TEST_CASE_METHOD(DukCppTest, "Ranges (sum)")
 
   constexpr static auto sumRange = [](duk::safe_input_range<int> r)
   {
-    return std::accumulate(r.begin(), r.end(), 0);
+    int sum = 0;
+
+    for (auto i : r)
+      sum += i;
+
+    return sum;
   };
 
   static constexpr auto sumRanges = [](duk::safe_input_range<int> r1, duk::safe_input_range<int> r2)
