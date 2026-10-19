@@ -519,6 +519,42 @@ v.y = 2;
 Example code for registering a similar class can be found in `test/vector.cpp`.
 
 
+### Type names
+
+There are situations in which dukcpp can make use of class' name. An example of such scenario is
+creating an error message saying that a function was called with a wrong parameter type.
+
+```
+Error: Invalid parameter type (position: 2, expected: Vector, passed: null).
+```
+
+In order to define a name for a type, user needs to specialize `duk::class_traits_name` class template.
+
+```cpp
+#include <duk/class.h>
+
+struct Vector {};
+
+namespace duk
+{
+
+template<>
+struct class_traits_name<Vector>
+{
+  static std::string_view get(duk_context*)
+  {
+    return "Vector";
+  }
+};
+
+} // namespace duk
+```
+
+Without explicit specialization, user types are referred to as `object`. dukcpp defines names for built-in
+types (`number` for `int`, `string` for `const char*` etc.), but it is possible to override them in the same way as
+user-defined types.
+
+
 ### Prototypes
 
 As described in [User types](#user-types) section, when a new object is pushed from C++ code to ES context, it is automatically wrapped in an ES `Object`. By default, such object doesn't have a prototype defined, which limits what we can do with it. To address that problem, dukcpp allows user to explicitly specify a prototype object in `duk::push` call.
@@ -811,7 +847,7 @@ void func(S& s) {}
 
 // ...
 
-func(s);  // error, because s needs to dereferenced first
+func(s);  // error, because s needs to be dereferenced first
 func(*s); // ok
 ```
 

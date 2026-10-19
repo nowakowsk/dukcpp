@@ -33,6 +33,9 @@ struct ObjectInfo
   virtual ~ObjectInfo() = default;
 
   [[nodiscard]]
+  virtual std::string_view typeName() noexcept = 0;
+
+  [[nodiscard]]
   virtual bool checkType(std::size_t typeId) noexcept = 0;
 
   virtual void finalize() noexcept = 0;
@@ -97,6 +100,12 @@ struct ObjectInfoImpl : ObjectInfo
     ObjectInfo(ctx),
     obj_(std::forward<decltype(obj)>(obj))
   {
+  }
+
+  [[nodiscard]]
+  std::string_view typeName() noexcept override
+  {
+    return class_traits_name<T>::get(ctx_);
   }
 
   [[nodiscard]]
@@ -195,7 +204,7 @@ private:
 static constexpr auto type_traits_object_info_name = std::string_view(DUKCPP_DETAIL_INTERNAL_NAME("objInfo"));
 
 
-template<typename T, type_traits_options options>
+template<typename T, TypeTraitsOptions Options>
 struct type_traits
 {
   using DecayT = std::decay_t<T>;
@@ -251,7 +260,7 @@ struct type_traits
       duk_set_prototype(ctx, -2);
     }
 
-    if constexpr (iterable<AdaptedT> || options.iterable)
+    if constexpr (iterable<AdaptedT> || Options.iterable)
       make_iterable<AdaptedT>(ctx, -1);
   }
 
@@ -349,28 +358,12 @@ struct type_traits<T>
       duk_push_current_function(ctx);
 
       if (!get_prop_string(ctx, -1, type_traits_func_info_name))
-        throw error(ctx, "called invalid or finalized function");
+        throw error(ctx, "Called invalid or finalized function.");
 
       auto funcPtr = static_cast<DecayFunc*>(duk_get_pointer(ctx, -1));
       duk_pop_2(ctx);
 
-      duk_ret_t result;
-      if ((((result =
-        [ctx, funcPtr]()
-        {
-          using ArgsTuple = boost::callable_traits::args_t<Signature>;
-
-          static constexpr auto argCount = std::tuple_size_v<ArgsTuple>;
-
-          return FunctionWrapper<
-            Signature, std::make_index_sequence<argCount>, false
-          >::run(ctx, *funcPtr);
-        }()) < 0) && ...))
-      {
-        return duk_error(ctx, DUK_ERR_TYPE_ERROR, "no matching function found");
-      }
-
-      return result;
+      return overloadedFunctionWrapper<Signature...>(ctx, *funcPtr);
     };
 
     static constexpr auto finalizer = [](duk_context* ctx) -> duk_ret_t
@@ -429,6 +422,35 @@ inline bool finalize_callable(duk_context* ctx, duk_idx_t idx)
 }
 
 
+inline string type_name(duk_context* ctx, duk_idx_t idx)
+{
+  ObjectInfo* objInfo = nullptr;
+
+  if (duk_is_object(ctx, idx))
+  {
+    scoped_pop _(ctx); // duk_get_prop_string
+    if (get_prop_string(ctx, idx, type_traits_object_info_name))
+    {
+      objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
+      if (objInfo)
+        return make_string(ctx, objInfo->typeName());
+    }
+  }
+
+  switch (duk_get_type(ctx, idx))
+  {
+    case DUK_TYPE_UNDEFINED: return make_string(ctx, "undefined");
+    case DUK_TYPE_NULL: return make_string(ctx, "null");
+    case DUK_TYPE_BOOLEAN: return make_string(ctx, "boolean");
+    case DUK_TYPE_NUMBER: return make_string(ctx, "number");
+    case DUK_TYPE_STRING: return make_string(ctx, "string");
+    case DUK_TYPE_OBJECT: return make_string(ctx, "object");
+  }
+
+  return make_string(ctx, "unknown");
+}
+
+
 inline bool clone(duk_context* ctx, duk_idx_t idx)
 {
   ObjectInfo* objInfo = nullptr;
@@ -454,7 +476,7 @@ struct type_traits<as_iterable<T>>
 
   static constexpr bool is_object = true;
 
-  static constexpr auto options = type_traits_options{ .iterable = true };
+  static constexpr auto options = TypeTraitsOptions{ .iterable = true };
 
   static void push(duk_context* ctx, auto&& obj, void* prototype_heap_ptr = nullptr)
   {

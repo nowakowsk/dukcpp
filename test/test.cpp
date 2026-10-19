@@ -32,7 +32,6 @@ static_assert(!std::is_copy_assignable_v<duk::input_iterator<int>>);
 
 
 // Check if handles match duk::handle_type concept.
-
 static_assert(duk::handle_type<duk::handle>);
 static_assert(duk::handle_type<duk::safe_handle>);
 
@@ -321,7 +320,7 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (with duk::callable_traits_type)"
   duk_pop(ctx_);
 
   // Functor returned from a function is treated as a Function because it specializes duk::callable_traits_type.
-  duk_peval_string(ctx_, "var f = makeFunctor();");
+  duk_peval_string(ctx_, "var f = makeFunctor()");
 
   duk_peval_string(ctx_, "f instanceof Function");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
@@ -386,7 +385,7 @@ TEST_CASE_METHOD(DukCppTest, "Register functor (without duk::callable_traits_typ
   duk_pop(ctx_);
 
   // Functor returned from a function is treated as an Object because it doesn't specialize duk::callable_traits_type.
-  duk_peval_string(ctx_, "var f = makeFunctor();");
+  duk_peval_string(ctx_, "var f = makeFunctor()");
 
   duk_peval_string(ctx_, "f instanceof Object");
   REQUIRE(duk::get<bool>(ctx_, -1) == true);
@@ -453,6 +452,138 @@ TEST_CASE_METHOD(DukCppTest, "Call ES function in C++ (null return value)")
   duk_peval_string(ctx_, "function f() {}; (f);");
   auto f = duk::get<std::function<void()>>(ctx_, -1);
   f();
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Call C++ function in ES (wrong number of parameters)")
+{
+  duk_push_global_object(ctx_);
+
+  // Function with a single descriptor and a single overload.
+  duk::put_prop_function<static_cast<int(*)(int, int)>(add)>(ctx_, -1, "add");
+
+  // Function with a multiple descriptors.
+  duk::put_prop_function<
+    static_cast<int(*)(int, int)>(add),
+    static_cast<int(*)(int, int, int)>(add)
+  >(ctx_, -1, "add_multiple_func_descriptors");
+
+  // Functor with multiple signatures.
+  duk::put_prop_function<
+    duk::function_descriptor<Functor{}, bool(), int(int)>
+  >(ctx_, -1, "func");
+
+  duk::put_prop_function<makeFunctor>(ctx_, -1, "makeFunctor");
+
+  duk_pop(ctx_);
+
+  //
+  duk_peval_string(ctx_, "add(1)");
+  EXPECT_ES_ERROR(ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid number or parameters (expected 2, passed 1).");
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "add(1, 1, 1)");
+  EXPECT_ES_ERROR(ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid number or parameters (expected 2, passed 3).");
+  duk_pop(ctx_);
+
+  //
+  duk_peval_string(ctx_, "add_multiple_func_descriptors(1)");
+  EXPECT_ES_ERROR(ctx_, -1, DUK_ERR_TYPE_ERROR, "No matching function found.");
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "add_multiple_func_descriptors(1, 1, 1, 1)");
+  EXPECT_ES_ERROR(ctx_, -1, DUK_ERR_TYPE_ERROR, "No matching function found.");
+  duk_pop(ctx_);
+
+  //
+  duk_peval_string(ctx_, "var f = makeFunctor()");
+  duk_peval_string(ctx_, "f(1, 1, 1)");
+  EXPECT_ES_ERROR(ctx_, -1, DUK_ERR_TYPE_ERROR, "No matching function found.");
+  duk_pop(ctx_);
+}
+
+
+TEST_CASE_METHOD(DukCppTest, "Call C++ function in ES (wrong parameter types)")
+{
+  struct S {};
+
+  duk_push_global_object(ctx_);
+
+  auto prototypeHandle = registerVector(ctx_, -1);
+
+  duk::put_prop_function<static_cast<int(*)(int, int)>(add)>(ctx_, -1, "add");
+
+  duk::put_prop_function(ctx_, -1, "func_int", [](int){});
+  duk::put_prop_function(ctx_, -1, "func_float", [](float){});
+  duk::put_prop_function(ctx_, -1, "func_string", [](const std::string&){});
+  duk::put_prop_function(ctx_, -1, "func_string_view", [](std::string_view){});
+  duk::put_prop_function(ctx_, -1, "func_string_literal", [](const char*){});
+  duk::put_prop_function(ctx_, -1, "func_bool", [](bool){});
+  duk::put_prop_function(ctx_, -1, "func_object", [](S){});
+
+  duk::put_prop_function(ctx_, -1, "make_S", [](){ return S{}; });
+
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "add(null, null)");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: number, passed: null)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "add(0, null)");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 2, expected: number, passed: null)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "addVector(new Vector(), null)");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 2, expected: Vector, passed: null)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "func_int(true)");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: number, passed: boolean)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "func_float(new Vector())");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: number, passed: Vector)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "func_string(0)");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: string, passed: number)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "func_string_view({})");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: string, passed: object)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "func_string_literal(null)");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: string, passed: null)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "func_bool('')");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: boolean, passed: string)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "func_object(undefined)");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: object, passed: undefined)."
+  );
+  duk_pop(ctx_);
 }
 
 

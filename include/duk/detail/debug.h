@@ -2,6 +2,7 @@
 #define DUK_DETAIL_DEBUG_H
 
 #include <duk/scoped_pop.h>
+#include <duk/detail/std.h>
 #include <cstdint>
 #include <string>
 
@@ -12,9 +13,9 @@ namespace duk::detail
 
 // inspectObject
 
-static std::string inspectObject(duk_context* ctx, duk_idx_t objIdx)
+static string inspectObject(duk_context* ctx, duk_idx_t objIdx)
 {
-  std::string objectInfo;
+  string objectInfo;
 
   duk::scoped_pop _(ctx); // duk_enum
   duk_enum(ctx, objIdx, DUK_ENUM_INCLUDE_NONENUMERABLE | DUK_ENUM_INCLUDE_HIDDEN | DUK_ENUM_INCLUDE_SYMBOLS);
@@ -22,7 +23,7 @@ static std::string inspectObject(duk_context* ctx, duk_idx_t objIdx)
   while (duk_next(ctx, -1, 1))
   {
     duk::scoped_pop _(ctx, 2); // duk_next
-    objectInfo += std::string("[") + duk_safe_to_string(ctx, -2) + "] => [" + duk_safe_to_string(ctx, -1) + "]\n";
+    objectInfo += string("[") + duk_safe_to_string(ctx, -2) + "] => [" + duk_safe_to_string(ctx, -1) + "]\n";
   }
 
   return objectInfo;
@@ -31,7 +32,7 @@ static std::string inspectObject(duk_context* ctx, duk_idx_t objIdx)
 
 // inspectCurrentActivationStack
 
-static std::string inspectCurrentActivationStack(duk_context* ctx)
+static string inspectCurrentActivationStack(duk_context* ctx)
 {
   static constexpr const char* duktapeTypeIdToTypeName[] = {
     "DUK_TYPE_NONE",
@@ -46,7 +47,7 @@ static std::string inspectCurrentActivationStack(duk_context* ctx)
     "DUK_TYPE_LIGHTFUNC"
   };
 
-  std::string stackInfo;
+  string stackInfo;
 
   for (duk_idx_t idx = 0; idx < duk_get_top(ctx); ++idx)
   {

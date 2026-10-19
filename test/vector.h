@@ -36,4 +36,20 @@ struct Vector
 void* registerVector(duk_context* ctx, duk_idx_t idx);
 
 
+namespace duk
+{
+
+template<>
+struct class_traits_name<Vector>
+{
+  [[nodiscard]]
+  static std::string_view get(duk_context*)
+  {
+    return "Vector";
+  }
+};
+
+} // namespace duk
+
+
 #endif // DUKCPP_TEST_VECTOR_H

@@ -36,7 +36,7 @@ duk_idx_t push_prop_accessor(duk_context* ctx)
 {
   return duk_push_c_function(
     ctx,
-    detail::FunctionSignatureWrapper<function_descriptor<Accessor, decltype(Accessor)>, true>::run,
+    detail::FunctionDescWrapper<function_descriptor<Accessor, decltype(Accessor)>, true>::run,
     DUK_VARARGS
   );
 }

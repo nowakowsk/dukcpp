@@ -68,6 +68,18 @@ struct class_traits_prototype
 } // namespace duk
 
 
+[[nodiscard]]
+bool isESError(duk_context* ctx, duk_idx_t idx);
+
+[[nodiscard]]
+bool isESError(duk_context* ctx, duk_idx_t idx, duk_errcode_t code);
+
+[[nodiscard]]
+bool isESError(duk_context* ctx, duk_idx_t idx, duk_errcode_t code, std::string_view message);
+
+#define EXPECT_ES_ERROR(...) CHECK(isESError(__VA_ARGS__))
+
+
 template<typename T>
 [[nodiscard]]
 bool equals(const T& a, const T& b, const T& e)
@@ -84,6 +96,7 @@ R identity(T x)
 
 
 int add(int a, int b);
+int add(int a, int b, int c);
 
 std::string add(std::string_view a, std::string_view b);
 
