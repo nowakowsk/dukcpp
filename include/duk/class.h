@@ -2,6 +2,8 @@
 #define DUKCPP_CLASS_H
 
 #include <duk/common.h>
+#include <duk/detail/std.h>
+#include <duk/iterable.h>
 #include <duk/string_traits.h>
 #include <duktape.h>
 #include <string_view>
@@ -15,59 +17,56 @@ namespace duk
 // class_traits_name
 
 template<typename T>
-struct class_traits_name
-{
-  [[nodiscard]]
-  static std::string_view get(duk_context*)
-  {
-    return "unknown";
-  }
-};
+struct class_traits_name;
 
 
 template<typename T>
-requires(integer<T> || floating_point<T> || enumeration<T>)
-struct class_traits_name<T>
+concept has_class_traits_name = requires(duk_context* ctx)
 {
-  [[nodiscard]]
-  static std::string_view get(duk_context*)
-  {
-    return "number";
-  }
+  { class_traits_name<T>::get(ctx) } -> std::same_as<std::string_view>;
 };
 
 
-template<boolean T>
-struct class_traits_name<T>
+namespace detail
 {
-  [[nodiscard]]
-  static std::string_view get(duk_context*)
-  {
-    return "boolean";
-  }
-};
 
 
-template<object T>
-struct class_traits_name<T>
+template<typename T>
+string classTraitsName(duk_context* ctx)
 {
-  [[nodiscard]]
-  static std::string_view get(duk_context*)
+  if constexpr (has_class_traits_name<T>)
   {
-    return "object";
+    if (auto name = class_traits_name<T>::get(ctx); !name.empty())
+      return make_string(ctx, name);
   }
-};
+
+  if constexpr (boolean<T>)
+    return make_string(ctx, "Boolean");
+
+  if constexpr (integer<T> || floating_point<T> || enumeration<T>)
+    return make_string(ctx, "Number");
+
+  if constexpr (string_type<T>)
+    return make_string(ctx, "String");
+
+  if constexpr (callable<T>)
+    return make_string(ctx, "Function");
+
+  if constexpr (iterable<T>)
+  {
+    using IterT = std::decay_t<decltype(*begin(T{}))>;
+
+    return "Iterable[" + classTraitsName<IterT>(ctx) + "]";
+  }
+
+  if constexpr (object<T>)
+    return make_string(ctx, "Object");
+
+  return make_string(ctx, "[unknown]");
+}
 
 
-template<string_type T>
-struct class_traits_name<T>
-{
-  [[nodiscard]]
-  static std::string_view get(duk_context*)
-  {
-    return "string";
-  }
-};
+} // namespace detail
 
 
 // class_traits_prototype

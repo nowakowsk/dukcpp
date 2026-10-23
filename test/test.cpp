@@ -509,7 +509,7 @@ TEST_CASE_METHOD(DukCppTest, "Call C++ function in ES (wrong parameter types)")
 
   duk_push_global_object(ctx_);
 
-  auto prototypeHandle = registerVector(ctx_, -1);
+  registerVector(ctx_, -1);
 
   duk::put_prop_function<static_cast<int(*)(int, int)>(add)>(ctx_, -1, "add");
 
@@ -520,6 +520,8 @@ TEST_CASE_METHOD(DukCppTest, "Call C++ function in ES (wrong parameter types)")
   duk::put_prop_function(ctx_, -1, "func_string_literal", [](const char*){});
   duk::put_prop_function(ctx_, -1, "func_bool", [](bool){});
   duk::put_prop_function(ctx_, -1, "func_object", [](S){});
+  duk::put_prop_function(ctx_, -1, "func_func", [](std::function<void()>){});
+  duk::put_prop_function(ctx_, -1, "func_list_vector", [](std::list<Vector>){});
 
   duk::put_prop_function(ctx_, -1, "make_S", [](){ return S{}; });
 
@@ -527,61 +529,73 @@ TEST_CASE_METHOD(DukCppTest, "Call C++ function in ES (wrong parameter types)")
 
   duk_peval_string(ctx_, "add(null, null)");
   EXPECT_ES_ERROR(
-    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: number, passed: null)."
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: Number, passed: Null)."
   );
   duk_pop(ctx_);
 
-  duk_peval_string(ctx_, "add(0, null)");
+  duk_peval_string(ctx_, "add(0, [])");
   EXPECT_ES_ERROR(
-    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 2, expected: number, passed: null)."
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 2, expected: Number, passed: Array)."
   );
   duk_pop(ctx_);
 
-  duk_peval_string(ctx_, "addVector(new Vector(), null)");
+  duk_peval_string(ctx_, "addVector(new Vector(), function(){})");
   EXPECT_ES_ERROR(
-    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 2, expected: Vector, passed: null)."
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 2, expected: Vector, passed: Function)."
   );
   duk_pop(ctx_);
 
   duk_peval_string(ctx_, "func_int(true)");
   EXPECT_ES_ERROR(
-    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: number, passed: boolean)."
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: Number, passed: Boolean)."
   );
   duk_pop(ctx_);
 
   duk_peval_string(ctx_, "func_float(new Vector())");
   EXPECT_ES_ERROR(
-    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: number, passed: Vector)."
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: Number, passed: Vector)."
   );
   duk_pop(ctx_);
 
   duk_peval_string(ctx_, "func_string(0)");
   EXPECT_ES_ERROR(
-    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: string, passed: number)."
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: String, passed: Number)."
   );
   duk_pop(ctx_);
 
   duk_peval_string(ctx_, "func_string_view({})");
   EXPECT_ES_ERROR(
-    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: string, passed: object)."
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: String, passed: Object)."
   );
   duk_pop(ctx_);
 
   duk_peval_string(ctx_, "func_string_literal(null)");
   EXPECT_ES_ERROR(
-    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: string, passed: null)."
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: String, passed: Null)."
   );
   duk_pop(ctx_);
 
   duk_peval_string(ctx_, "func_bool('')");
   EXPECT_ES_ERROR(
-    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: boolean, passed: string)."
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: Boolean, passed: String)."
   );
   duk_pop(ctx_);
 
   duk_peval_string(ctx_, "func_object(undefined)");
   EXPECT_ES_ERROR(
-    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: object, passed: undefined)."
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: Object, passed: Undefined)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "func_func(undefined)");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: Function, passed: Undefined)."
+  );
+  duk_pop(ctx_);
+
+  duk_peval_string(ctx_, "func_list_vector(null)");
+  EXPECT_ES_ERROR(
+    ctx_, -1, DUK_ERR_TYPE_ERROR, "Invalid parameter type (position: 1, expected: Iterable[Vector], passed: Null)."
   );
   duk_pop(ctx_);
 }

@@ -33,7 +33,7 @@ struct ObjectInfo
   virtual ~ObjectInfo() = default;
 
   [[nodiscard]]
-  virtual std::string_view typeName() noexcept = 0;
+  virtual string typeName() noexcept = 0;
 
   [[nodiscard]]
   virtual bool checkType(std::size_t typeId) noexcept = 0;
@@ -103,9 +103,9 @@ struct ObjectInfoImpl : ObjectInfo
   }
 
   [[nodiscard]]
-  std::string_view typeName() noexcept override
+  string typeName() noexcept override
   {
-    return class_traits_name<T>::get(ctx_);
+    return classTraitsName<T>(ctx_);
   }
 
   [[nodiscard]]
@@ -422,7 +422,7 @@ inline bool finalize_callable(duk_context* ctx, duk_idx_t idx)
 }
 
 
-inline string type_name(duk_context* ctx, duk_idx_t idx)
+inline string typeName(duk_context* ctx, duk_idx_t idx)
 {
   ObjectInfo* objInfo = nullptr;
 
@@ -431,23 +431,32 @@ inline string type_name(duk_context* ctx, duk_idx_t idx)
     scoped_pop _(ctx); // duk_get_prop_string
     if (get_prop_string(ctx, idx, type_traits_object_info_name))
     {
-      objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1));
-      if (objInfo)
-        return make_string(ctx, objInfo->typeName());
+      if (objInfo = static_cast<ObjectInfo*>(duk_get_pointer(ctx, -1)); objInfo)
+      {
+        if (auto name = objInfo->typeName(); !name.empty())
+          return make_string(ctx, name);
+      }
     }
   }
 
   switch (duk_get_type(ctx, idx))
   {
-    case DUK_TYPE_UNDEFINED: return make_string(ctx, "undefined");
-    case DUK_TYPE_NULL: return make_string(ctx, "null");
-    case DUK_TYPE_BOOLEAN: return make_string(ctx, "boolean");
-    case DUK_TYPE_NUMBER: return make_string(ctx, "number");
-    case DUK_TYPE_STRING: return make_string(ctx, "string");
-    case DUK_TYPE_OBJECT: return make_string(ctx, "object");
+    case DUK_TYPE_UNDEFINED: return make_string(ctx, "Undefined");
+    case DUK_TYPE_NULL: return make_string(ctx, "Null");
+    case DUK_TYPE_BOOLEAN: return make_string(ctx, "Boolean");
+    case DUK_TYPE_NUMBER: return make_string(ctx, "Number");
+    case DUK_TYPE_STRING: return make_string(ctx, "String");
+    case DUK_TYPE_OBJECT:
+      if (duk_is_function(ctx, idx))
+        return make_string(ctx, "Function");
+
+      if (duk_is_array(ctx, idx))
+        return make_string(ctx, "Array");
+
+      return make_string(ctx, "Object");
   }
 
-  return make_string(ctx, "unknown");
+  return make_string(ctx, "[unknown]");
 }
 
 

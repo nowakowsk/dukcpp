@@ -525,7 +525,7 @@ There are situations in which dukcpp can make use of class' name. An example of 
 creating an error message saying that a function was called with a wrong parameter type.
 
 ```
-Error: Invalid parameter type (position: 2, expected: Vector, passed: null).
+Error: Invalid parameter type (position: 2, expected: Vector, passed: Null).
 ```
 
 In order to define a name for a type, user needs to specialize `duk::class_traits_name` class template.
@@ -550,9 +550,11 @@ struct class_traits_name<Vector>
 } // namespace duk
 ```
 
-Without explicit specialization, user types are referred to as `object`. dukcpp defines names for built-in
-types (`number` for `int`, `string` for `const char*` etc.), but it is possible to override them in the same way as
-user-defined types.
+Without explicit specialization, user types are identified by generic names (`Object`, `Function`, etc.).
+
+It is also possible to override default names for built-in types (`bool`, `int`, etc.).
+
+Specializations returning empty strings are ignored.
 
 
 ### Prototypes

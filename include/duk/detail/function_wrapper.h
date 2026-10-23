@@ -140,7 +140,7 @@ struct FunctionWrapper<Signature, std::index_sequence<argIdx...>, IsPropertyCall
             std::format_to(
               std::back_inserter(errorMsg),
               "Invalid parameter type (position: {}, expected: {}, passed: {}).",
-              argIdx + 1, class_traits_name<DecayArgType>::get(ctx), type_name(ctx, argIdx)
+              argIdx + 1, classTraitsName<DecayArgType>(ctx), typeName(ctx, argIdx)
             );
           }
 
